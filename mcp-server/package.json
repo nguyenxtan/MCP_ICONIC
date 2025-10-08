@@ -4,7 +4,13 @@
   "description": "MCP Server with MarkItDown integration",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:verbose": "jest --verbose",
+    "test:unit": "jest --testPathPattern=tests/.*\\.test\\.js",
+    "test:api": "jest --testPathPattern=tests/api\\.test\\.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -25,5 +31,9 @@
     "@aws-sdk/client-s3": "^3.490.0",
     "googleapis": "^129.0.0",
     "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   }
 }
