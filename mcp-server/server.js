@@ -8,6 +8,7 @@ const errorHandler = require('./middleware/errorHandler');
 // Import routes
 const markitdownRoutes = require('./routes/markitdown.routes');
 const firecrawlRoutes = require('./routes/firecrawl.routes');
+const aiRoutes = require('./routes/ai.routes');
 const healthRoutes = require('./routes/health.routes');
 
 // Initialize Express app
@@ -38,6 +39,7 @@ app.get('/', (req, res) => {
       health: '/health',
       markitdown: '/api/markitdown',
       firecrawl: '/api/firecrawl',
+      ai: '/api/ai',
       docs: '/api/docs'
     },
     modules: {
@@ -59,6 +61,23 @@ app.get('/', (req, res) => {
           'GET /api/firecrawl/jobs - Get all jobs',
           'GET /api/firecrawl/download/:jobId - Download markdown file'
         ]
+      },
+      ai: {
+        enabled: config.ai.enabled,
+        endpoints: [
+          'POST /api/ai/ocr/image - OCR on image file',
+          'POST /api/ai/ocr/pdf - OCR on PDF file',
+          'POST /api/ai/summarize - Summarize content',
+          'POST /api/ai/summarize/keypoints - Extract key points',
+          'POST /api/ai/translate - Translate text',
+          'GET /api/ai/translate/languages - Get supported languages',
+          'POST /api/ai/analyze - Full content analysis',
+          'POST /api/ai/analyze/sentiment - Sentiment analysis',
+          'POST /api/ai/analyze/keywords - Extract keywords',
+          'POST /api/ai/analyze/entities - Extract entities',
+          'POST /api/ai/analyze/topics - Classify topics',
+          'POST /api/ai/analyze/stats - Reading statistics'
+        ]
       }
     }
   });
@@ -68,6 +87,7 @@ app.get('/', (req, res) => {
 app.use('/health', healthRoutes);
 app.use('/api/markitdown', markitdownRoutes);
 app.use('/api/firecrawl', firecrawlRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 handler
 app.use((req, res) => {
