@@ -83,5 +83,53 @@ module.exports = {
       apiKey: process.env.OPENAI_API_KEY || '',
       model: 'gpt-4o-mini'
     }
+  },
+
+  // Document Conversion config
+  conversion: {
+    enabled: true,
+    themes: ['default', 'dark', 'minimal'],
+    pdfFormat: 'A4',
+    pdfMargin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
+  },
+
+  // Template Engine config
+  templates: {
+    enabled: true,
+    directory: './templates'
+  },
+
+  // Batch Processing config
+  batch: {
+    enabled: true,
+    maxFilesPerJob: 100,
+    jobRetentionMinutes: 120 // Keep job data for 2 hours
+  },
+
+  // Cloud Storage config
+  storage: {
+    // AWS S3
+    s3: {
+      enabled: process.env.AWS_S3_ENABLED === 'true' || false,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      region: process.env.AWS_REGION || 'us-east-1',
+      bucket: process.env.AWS_S3_BUCKET || ''
+    },
+
+    // Google Drive
+    googleDrive: {
+      enabled: process.env.GOOGLE_DRIVE_ENABLED === 'true' || false,
+      credentials: process.env.GOOGLE_DRIVE_CREDENTIALS || '', // JSON string
+      folderId: process.env.GOOGLE_DRIVE_FOLDER_ID || ''
+    }
+  },
+
+  // QR Code config
+  qrcode: {
+    enabled: true,
+    defaultWidth: 300,
+    defaultErrorCorrectionLevel: 'M', // L, M, Q, H
+    maxDataLength: 4296
   }
 };

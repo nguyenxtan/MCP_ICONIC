@@ -9,6 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 const markitdownRoutes = require('./routes/markitdown.routes');
 const firecrawlRoutes = require('./routes/firecrawl.routes');
 const aiRoutes = require('./routes/ai.routes');
+const conversionRoutes = require('./routes/conversion.routes');
 const healthRoutes = require('./routes/health.routes');
 
 // Initialize Express app
@@ -40,6 +41,11 @@ app.get('/', (req, res) => {
       markitdown: '/api/markitdown',
       firecrawl: '/api/firecrawl',
       ai: '/api/ai',
+      conversion: '/api/conversion',
+      templates: '/api/templates',
+      batch: '/api/batch',
+      qrcode: '/api/qrcode',
+      cloud: '/api/cloud',
       docs: '/api/docs'
     },
     modules: {
@@ -78,6 +84,46 @@ app.get('/', (req, res) => {
           'POST /api/ai/analyze/topics - Classify topics',
           'POST /api/ai/analyze/stats - Reading statistics'
         ]
+      },
+      conversion: {
+        enabled: config.conversion.enabled,
+        endpoints: [
+          'POST /api/conversion/md-to-html - Convert Markdown to HTML',
+          'POST /api/conversion/md-to-pdf - Convert Markdown to PDF',
+          'POST /api/conversion/md-to-docx - Convert Markdown to DOCX',
+          'GET /api/conversion/download/:filename - Download converted file'
+        ]
+      },
+      templates: {
+        enabled: config.templates.enabled,
+        endpoints: [
+          'GET /api/templates - List all templates',
+          'GET /api/templates/:name - Get template content',
+          'POST /api/templates/render - Render template with data',
+          'POST /api/templates - Create custom template',
+          'DELETE /api/templates/:name - Delete template'
+        ]
+      },
+      batch: {
+        enabled: config.batch.enabled,
+        endpoints: [
+          'POST /api/batch/convert - Batch convert files',
+          'GET /api/batch/status/:jobId - Get batch job status',
+          'GET /api/batch/download/:jobId - Download batch results as ZIP',
+          'GET /api/batch/jobs - List all batch jobs'
+        ]
+      },
+      qrcode: {
+        enabled: config.qrcode.enabled,
+        endpoints: [
+          'POST /api/qrcode/generate - Generate QR code'
+        ]
+      },
+      cloud: {
+        enabled: config.storage.s3.enabled || config.storage.googleDrive.enabled,
+        endpoints: [
+          'GET /api/cloud/providers - Get available cloud storage providers'
+        ]
       }
     }
   });
@@ -88,6 +134,11 @@ app.use('/health', healthRoutes);
 app.use('/api/markitdown', markitdownRoutes);
 app.use('/api/firecrawl', firecrawlRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/conversion', conversionRoutes);
+app.use('/api/templates', conversionRoutes);
+app.use('/api/batch', conversionRoutes);
+app.use('/api/qrcode', conversionRoutes);
+app.use('/api/cloud', conversionRoutes);
 
 // 404 handler
 app.use((req, res) => {
