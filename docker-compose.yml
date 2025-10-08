@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: ./mcp-server
+    container_name: mcp-server
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./mcp-server/uploads:/app/uploads
+      - ./mcp-server/outputs:/app/outputs
+    environment:
+      - NODE_ENV=production
+      - DEBUG=false
+    networks:
+      - n8n-docker_default
+
+networks:
+  n8n-docker_default:
+    external: true
