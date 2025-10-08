@@ -1,0 +1,166 @@
+{
+  "name": "MCP: Auto Invoice Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/templates/render",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"templateName\": \"invoice\",\n  \"data\": {\n    \"invoiceNumber\": \"{{ $json.invoiceNumber }}\",\n    \"invoiceDate\": \"{{ $json.invoiceDate }}\",\n    \"dueDate\": \"{{ $json.dueDate }}\",\n    \"clientName\": \"{{ $json.clientName }}\",\n    \"clientAddress\": \"{{ $json.clientAddress }}\",\n    \"clientEmail\": \"{{ $json.clientEmail }}\",\n    \"companyName\": \"My Company Inc.\",\n    \"companyAddress\": \"123 Business St.\",\n    \"companyEmail\": \"billing@mycompany.com\",\n    \"companyPhone\": \"+1-555-0123\",\n    \"items\": {{ $json.items }},\n    \"subtotal\": {{ $json.subtotal }},\n    \"taxRate\": 10,\n    \"tax\": {{ $json.tax }},\n    \"total\": {{ $json.total }},\n    \"paymentTerms\": \"Payment due within 30 days\",\n    \"notes\": \"Thank you for your business!\"\n  }\n}",
+        "options": {}
+      },
+      "name": "Render Invoice Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [460, 240],
+      "id": "node-1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/conversion/md-to-pdf",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"markdown\": \"{{ $json.rendered }}\",\n  \"theme\": \"default\",\n  \"format\": \"A4\"\n}",
+        "options": {}
+      },
+      "name": "Convert to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 240],
+      "id": "node-2"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "invoiceNumber",
+              "value": "INV-2024-001"
+            },
+            {
+              "name": "invoiceDate",
+              "value": "2024-01-15"
+            },
+            {
+              "name": "dueDate",
+              "value": "2024-02-15"
+            },
+            {
+              "name": "clientName",
+              "value": "Acme Corporation"
+            },
+            {
+              "name": "clientAddress",
+              "value": "456 Client Ave, City, State 12345"
+            },
+            {
+              "name": "clientEmail",
+              "value": "accounting@acme.com"
+            }
+          ],
+          "number": [
+            {
+              "name": "subtotal",
+              "value": 1000
+            },
+            {
+              "name": "tax",
+              "value": 100
+            },
+            {
+              "name": "total",
+              "value": 1100
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": false
+        }
+      },
+      "name": "Invoice Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [240, 240],
+      "id": "node-0"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate items array\nconst items = [\n  {\n    description: \"Web Development Services\",\n    quantity: 40,\n    rate: 100\n  },\n  {\n    description: \"Design Services\",\n    quantity: 20,\n    rate: 80\n  }\n];\n\nreturn { items };"
+      },
+      "name": "Add Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [340, 340],
+      "id": "node-4"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost:3000/api/conversion/download/{{ $json.filename }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Download Invoice PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 240],
+      "id": "node-3"
+    }
+  ],
+  "connections": {
+    "Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Add Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Items": {
+      "main": [
+        [
+          {
+            "node": "Render Invoice Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Invoice Template": {
+      "main": [
+        [
+          {
+            "node": "Convert to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to PDF": {
+      "main": [
+        [
+          {
+            "node": "Download Invoice PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}

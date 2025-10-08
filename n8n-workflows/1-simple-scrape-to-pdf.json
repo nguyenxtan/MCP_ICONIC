@@ -1,0 +1,109 @@
+{
+  "name": "MCP: Scrape Website to PDF",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/firecrawl/scrape",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"url\": \"{{ $json.url }}\",\n  \"selector\": \"article\",\n  \"removeSelectors\": [\"nav\", \"footer\", \"aside\"]\n}",
+        "options": {}
+      },
+      "name": "Firecrawl: Scrape URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [460, 240],
+      "id": "node-1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/conversion/md-to-pdf",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"markdown\": \"{{ $json.markdown }}\",\n  \"theme\": \"default\",\n  \"format\": \"A4\"\n}",
+        "options": {}
+      },
+      "name": "Convert to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 240],
+      "id": "node-2"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost:3000/api/conversion/download/{{ $json.filename }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 240],
+      "id": "node-3"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "url",
+              "value": "https://example.com/blog/article"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Input URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [240, 240],
+      "id": "node-0"
+    }
+  ],
+  "connections": {
+    "Input URL": {
+      "main": [
+        [
+          {
+            "node": "Firecrawl: Scrape URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl: Scrape URL": {
+      "main": [
+        [
+          {
+            "node": "Convert to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to PDF": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}

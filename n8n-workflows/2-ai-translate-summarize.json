@@ -1,0 +1,119 @@
+{
+  "name": "MCP: AI Translate & Summarize",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/ai/translate",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"text\": \"{{ $json.text }}\",\n  \"targetLang\": \"vi\",\n  \"sourceLang\": \"auto\",\n  \"preserveFormatting\": true,\n  \"provider\": \"openai\"\n}",
+        "options": {}
+      },
+      "name": "AI: Translate to Vietnamese",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [460, 240],
+      "id": "node-1",
+      "notes": "Requires OPENAI_API_KEY"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/ai/summarize",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParametersJson": "={\n  \"content\": \"{{ $json.translatedText }}\",\n  \"maxLength\": \"short\",\n  \"style\": \"bullet_points\",\n  \"language\": \"vi\"\n}",
+        "options": {}
+      },
+      "name": "AI: Summarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 240],
+      "id": "node-2",
+      "notes": "Requires OPENAI_API_KEY"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "text",
+              "value": "This is a long article in English that needs to be translated to Vietnamese and summarized. It contains many paragraphs of important information that should be condensed into key points."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Input Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [240, 240],
+      "id": "node-0"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "original",
+              "value": "={{ $node[\"Input Text\"].json.text }}"
+            },
+            {
+              "name": "translated",
+              "value": "={{ $node[\"AI: Translate to Vietnamese\"].json.translatedText }}"
+            },
+            {
+              "name": "summary",
+              "value": "={{ $json.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [900, 240],
+      "id": "node-3"
+    }
+  ],
+  "connections": {
+    "Input Text": {
+      "main": [
+        [
+          {
+            "node": "AI: Translate to Vietnamese",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Translate to Vietnamese": {
+      "main": [
+        [
+          {
+            "node": "AI: Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Summarize": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}
