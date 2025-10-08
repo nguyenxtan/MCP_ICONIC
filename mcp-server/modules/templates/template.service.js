@@ -285,48 +285,37 @@ excerpt: "{{excerpt}}"
 {{/each}}
 `,
 
-      'invoice': `# INVOICE
-
-**Invoice #:** {{invoiceNumber}}
-**Date:** {{formatDate invoiceDate 'short'}}
-**Due Date:** {{formatDate dueDate 'short'}}
-
-## Bill To
-{{clientName}}
-{{clientAddress}}
-{{clientEmail}}
-
-## From
-{{companyName}}
-{{companyAddress}}
-{{companyEmail}}
-{{companyPhone}}
-
-## Items
-
-| Description | Quantity | Rate | Amount |
-|-------------|----------|------|--------|
-{{#each items}}
-| {{description}} | {{quantity}} | \\${{rate}} | \\${{multiply quantity rate}} |
-{{/each}}
-
-## Summary
-
-| | |
-|---|---|
-| **Subtotal** | \\${{formatNumber subtotal}} |
-| **Tax ({{taxRate}}%)** | \\${{formatNumber tax}} |
-| **Total** | **\\${{formatNumber total}}** |
-
-## Payment Terms
-{{paymentTerms}}
-
-## Notes
-{{notes}}
-
----
-*Thank you for your business!*
-`
+      'invoice': '# INVOICE\n\n' +
+'**Invoice #:** {{invoiceNumber}}\n' +
+'**Date:** {{formatDate invoiceDate \'short\'}}\n' +
+'**Due Date:** {{formatDate dueDate \'short\'}}\n\n' +
+'## Bill To\n' +
+'{{clientName}}\n' +
+'{{clientAddress}}\n' +
+'{{clientEmail}}\n\n' +
+'## From\n' +
+'{{companyName}}\n' +
+'{{companyAddress}}\n' +
+'{{companyEmail}}\n' +
+'{{companyPhone}}\n\n' +
+'## Items\n\n' +
+'| Description | Quantity | Rate | Amount |\n' +
+'|-------------|----------|------|--------|\n' +
+'{{#each items}}\n' +
+'| {{description}} | {{quantity}} | ${{rate}} | ${{multiply quantity rate}} |\n' +
+'{{/each}}\n\n' +
+'## Summary\n\n' +
+'| | |\n' +
+'|---|---|\n' +
+'| **Subtotal** | ${{formatNumber subtotal}} |\n' +
+'| **Tax ({{taxRate}}%)** | ${{formatNumber tax}} |\n' +
+'| **Total** | **${{formatNumber total}}** |\n\n' +
+'## Payment Terms\n' +
+'{{paymentTerms}}\n\n' +
+'## Notes\n' +
+'{{notes}}\n\n' +
+'---\n' +
+'*Thank you for your business!*\n'
     };
 
     // Create template files
