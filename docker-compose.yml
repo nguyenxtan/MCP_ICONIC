@@ -5,30 +5,36 @@ services:
     build: ./mcp-server
     container_name: mcp-server
     restart: always
+
+    # Port 3001 - KHÔNG trùng port 3000 của website
     ports:
-      - "3001:3000"  # External port 3001 for mcp.iconiclogs.com
+      - "3001:3000"
+
     volumes:
       - ./mcp-server/uploads:/app/uploads
       - ./mcp-server/outputs:/app/outputs
-      - ./mcp-server/.env:/app/.env  # Mount .env file
+      - ./mcp-server/.env:/app/.env
+
     environment:
       - NODE_ENV=production
       - DEBUG=false
-      # Add API keys here or use .env file
+      # AI API Keys (optional)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY:-}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
-      - GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID:-}
-      - GOOGLE_DRIVE_CLIENT_SECRET=${GOOGLE_DRIVE_CLIENT_SECRET:-}
-      - GOOGLE_DRIVE_REDIRECT_URI=${GOOGLE_DRIVE_REDIRECT_URI:-}
-      - GOOGLE_DRIVE_REFRESH_TOKEN=${GOOGLE_DRIVE_REFRESH_TOKEN:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+
+    # Auto-restart nếu service lỗi
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Cùng network với n8n
     networks:
-      - mcp-network
+      - iconic_net
 
 networks:
-  mcp-network:
-    driver: bridge
-    name: mcp-network
+  iconic_net:
+    external: true
