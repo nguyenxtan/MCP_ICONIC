@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
 const markitdownRoutes = require('./routes/markitdown.routes');
+const firecrawlRoutes = require('./routes/firecrawl.routes');
 const healthRoutes = require('./routes/health.routes');
 
 // Initialize Express app
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       markitdown: '/api/markitdown',
+      firecrawl: '/api/firecrawl',
       docs: '/api/docs'
     },
     modules: {
@@ -50,7 +52,13 @@ app.get('/', (req, res) => {
       },
       firecrawl: {
         enabled: config.firecrawl.enabled,
-        status: 'Coming soon...'
+        endpoints: [
+          'POST /api/firecrawl/scrape - Scrape single URL to Markdown',
+          'POST /api/firecrawl/crawl - Crawl website to Markdown',
+          'GET /api/firecrawl/status/:jobId - Get job status',
+          'GET /api/firecrawl/jobs - Get all jobs',
+          'GET /api/firecrawl/download/:jobId - Download markdown file'
+        ]
       }
     }
   });
@@ -59,6 +67,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/health', healthRoutes);
 app.use('/api/markitdown', markitdownRoutes);
+app.use('/api/firecrawl', firecrawlRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -70,7 +79,11 @@ app.use((req, res) => {
       '/health',
       '/api/markitdown/convert',
       '/api/markitdown/status/:jobId',
-      '/api/markitdown/jobs'
+      '/api/markitdown/jobs',
+      '/api/firecrawl/scrape',
+      '/api/firecrawl/crawl',
+      '/api/firecrawl/status/:jobId',
+      '/api/firecrawl/jobs'
     ]
   });
 });

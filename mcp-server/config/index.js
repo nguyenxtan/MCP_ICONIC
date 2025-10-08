@@ -30,9 +30,13 @@ module.exports = {
     ]
   },
   
-  // Firecrawl config (placeholder cho tương lai)
+  // Firecrawl config
   firecrawl: {
-    enabled: false,
-    apiKey: process.env.FIRECRAWL_API_KEY || ''
+    enabled: true,
+    maxPages: 50,        // Maximum pages per crawl job
+    maxDepth: 5,         // Maximum crawl depth
+    timeout: 30000,      // Request timeout (30 seconds)
+    userAgent: 'Mozilla/5.0 (compatible; MCPFirecrawl/1.0)',
+    defaultRemoveSelectors: ['script', 'style', 'nav', 'footer', 'iframe']
   }
 };
