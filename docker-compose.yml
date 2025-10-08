@@ -6,16 +6,29 @@ services:
     container_name: mcp-server
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"  # External port 3001 for mcp.iconiclogs.com
     volumes:
       - ./mcp-server/uploads:/app/uploads
       - ./mcp-server/outputs:/app/outputs
+      - ./mcp-server/.env:/app/.env  # Mount .env file
     environment:
       - NODE_ENV=production
       - DEBUG=false
+      # Add API keys here or use .env file
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      - GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID:-}
+      - GOOGLE_DRIVE_CLIENT_SECRET=${GOOGLE_DRIVE_CLIENT_SECRET:-}
+      - GOOGLE_DRIVE_REDIRECT_URI=${GOOGLE_DRIVE_REDIRECT_URI:-}
+      - GOOGLE_DRIVE_REFRESH_TOKEN=${GOOGLE_DRIVE_REFRESH_TOKEN:-}
     networks:
-      - n8n-docker_default
+      - mcp-network
 
 networks:
-  n8n-docker_default:
-    external: true
+  mcp-network:
+    driver: bridge
+    name: mcp-network
