@@ -307,16 +307,16 @@ excerpt: "{{excerpt}}"
 | Description | Quantity | Rate | Amount |
 |-------------|----------|------|--------|
 {{#each items}}
-| {{description}} | {{quantity}} | ${{rate}} | ${{multiply quantity rate}} |
+| {{description}} | {{quantity}} | \\${{rate}} | \\${{multiply quantity rate}} |
 {{/each}}
 
 ## Summary
 
 | | |
 |---|---|
-| **Subtotal** | ${{formatNumber subtotal}} |
-| **Tax ({{taxRate}}%)** | ${{formatNumber tax}} |
-| **Total** | **${{formatNumber total}}** |
+| **Subtotal** | \\${{formatNumber subtotal}} |
+| **Tax ({{taxRate}}%)** | \\${{formatNumber tax}} |
+| **Total** | **\\${{formatNumber total}}** |
 
 ## Payment Terms
 {{paymentTerms}}
