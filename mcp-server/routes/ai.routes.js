@@ -8,6 +8,7 @@ const translationService = require('../modules/ai/translation.service');
 const analysisService = require('../modules/ai/analysis.service');
 const logger = require('../modules/common/logger');
 const config = require('../config');
+const checkApiKeys = require('../middleware/checkApiKeys');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -99,7 +100,7 @@ router.post('/ocr/pdf', upload.single('file'), async (req, res, next) => {
  * POST /api/ai/summarize
  * Summarize text/markdown content
  */
-router.post('/summarize', async (req, res, next) => {
+router.post('/summarize', checkApiKeys, async (req, res, next) => {
   try {
     const { content, maxLength, style, language } = req.body;
 
