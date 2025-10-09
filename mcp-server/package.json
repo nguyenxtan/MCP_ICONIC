@@ -8,8 +8,9 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "start": "node server.js",
-    "mcp": "node mcp-simple.js",
+    "start": "node server.js & node mcp-simple.js",
+    "start:api": "node server.js",
+    "start:mcp": "node mcp-simple.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
