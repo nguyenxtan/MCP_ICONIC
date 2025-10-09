@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # MCP Protocol Server (chạy song song với REST API server)
+  mcp-protocol:
+    build: ./mcp-server
+    container_name: mcp-protocol
+    restart: always
+    command: node mcp-server.js
+    ports:
+      - "3002:3001"  # Port 3002 trên host -> 3001 trong container
+    environment:
+      - MCP_PORT=3001
+      - API_BASE_URL=http://mcp-server:3000  # Kết nối tới REST API server
+      - NODE_ENV=production
+    networks:
+      - iconic_net
+    depends_on:
+      - mcp-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  iconic_net:
+    external: true

@@ -8,7 +8,11 @@
       "Bash(git push:*)",
       "Bash(python3:*)",
       "Bash(pip3 list:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(API_BASE_URL=http://localhost:3000 node mcp-server.js)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(API_BASE_URL=http://localhost:3000 node mcp-simple.js)"
     ],
     "deny": [],
     "ask": []
