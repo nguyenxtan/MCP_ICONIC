@@ -37,7 +37,7 @@ const TOOLS = [
   },
   {
     name: 'convert_to_markdown',
-    description: 'Convert PDF, DOCX, PPTX files to markdown using MarkItDown',
+    description: 'Convert PDF, DOCX, PPTX files to markdown using MarkItDown (fast, basic conversion)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -49,6 +49,52 @@ const TOOLS = [
           type: 'string',
           enum: ['pdf', 'docx', 'pptx', 'xlsx'],
           description: 'File format'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'docling_convert',
+    description: 'Convert documents using IBM Docling AI (advanced: better layout, tables, formulas)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL or file path of the document'
+        },
+        useVLM: {
+          type: 'boolean',
+          description: 'Use Visual Language Model for maximum accuracy (slower)'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'transcribe_audio',
+    description: 'Transcribe audio file to text using Docling ASR (WAV, MP3)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL of audio file'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'extract_pdf_images',
+    description: 'Extract all images from PDF document',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL of PDF document'
         }
       },
       required: ['url']
@@ -90,6 +136,28 @@ async function executeTool(name, args) {
       case 'convert_to_markdown':
         response = await axios.post(`${API_BASE_URL}/api/markitdown/convert`, args);
         return response.data.markdown || JSON.stringify(response.data);
+
+      case 'docling_convert':
+        response = await axios.post(`${API_BASE_URL}/api/docling/convert`, {
+          url: args.url,
+          useVLM: args.useVLM
+        });
+        return response.data.markdown || JSON.stringify(response.data);
+
+      case 'transcribe_audio':
+        response = await axios.post(`${API_BASE_URL}/api/docling/transcribe`, {
+          url: args.url
+        });
+        return response.data.transcript || JSON.stringify(response.data);
+
+      case 'extract_pdf_images':
+        response = await axios.post(`${API_BASE_URL}/api/docling/extract-images`, {
+          url: args.url
+        });
+        return JSON.stringify({
+          imageCount: response.data.imageCount,
+          images: response.data.images
+        });
 
       case 'summarize_text':
         response = await axios.post(`${API_BASE_URL}/api/ai/summarize`, {
