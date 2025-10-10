@@ -11,7 +11,7 @@ const firecrawlRoutes = require('./routes/firecrawl.routes');
 const aiRoutes = require('./routes/ai.routes');
 const conversionRoutes = require('./routes/conversion.routes');
 const healthRoutes = require('./routes/health.routes');
-const doclingRoutes = require('./routes/docling.routes');
+// const doclingRoutes = require('./routes/docling.routes'); // Disabled: too heavy for Alpine
 
 // Initialize Express app
 const app = express();
@@ -140,7 +140,7 @@ app.use('/api/templates', conversionRoutes);
 app.use('/api/batch', conversionRoutes);
 app.use('/api/qrcode', conversionRoutes);
 app.use('/api/cloud', conversionRoutes);
-app.use('/api/docling', doclingRoutes);
+// app.use('/api/docling', doclingRoutes); // Disabled: Docling too heavy for Alpine
 
 // 404 handler
 app.use((req, res) => {
