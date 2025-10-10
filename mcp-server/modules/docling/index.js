@@ -177,6 +177,143 @@ except Exception as e:
       throw error;
     }
   }
+
+  /**
+   * Transcribe audio file using Docling ASR
+   * @param {string} source - Audio file URL or path (WAV, MP3, etc.)
+   * @param {object} options - Transcription options
+   */
+  async transcribeAudio(source, options = {}) {
+    if (!this.isAvailable) {
+      throw new Error('Docling is not installed');
+    }
+
+    const startTime = Date.now();
+    logger.info('Starting Docling audio transcription', { source, options });
+
+    try {
+      // Docling supports audio files directly
+      const result = await this.convertToMarkdown(source, {
+        ...options,
+        format: 'audio'
+      });
+
+      const duration = Date.now() - startTime;
+      logger.info('Audio transcription completed', {
+        source,
+        duration: `${duration}ms`
+      });
+
+      return {
+        success: true,
+        transcript: result.markdown,
+        metadata: {
+          source,
+          duration,
+          engine: 'docling-asr'
+        }
+      };
+
+    } catch (error) {
+      logger.error('Audio transcription failed', {
+        source,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Extract images from PDF document
+   * @param {string} source - PDF URL or file path
+   * @param {object} options - Extraction options
+   */
+  async extractImages(source, options = {}) {
+    if (!this.isAvailable) {
+      throw new Error('Docling is not installed');
+    }
+
+    const startTime = Date.now();
+    logger.info('Starting image extraction from PDF', { source });
+
+    try {
+      // Create temp directory for output
+      const tempDir = path.join(__dirname, '../../outputs', `images_${Date.now()}`);
+      await fs.mkdir(tempDir, { recursive: true });
+
+      // Python script to extract images
+      const pythonScript = `
+import sys
+import json
+import os
+from docling.document_converter import DocumentConverter
+
+try:
+    source = "${source}"
+    output_dir = "${tempDir}"
+
+    converter = DocumentConverter()
+    result = converter.convert(source)
+
+    # Extract images
+    images = []
+    doc = result.document
+
+    # Iterate through all elements to find images
+    for page_num, page in enumerate(doc.pages):
+        for element in page.elements:
+            if hasattr(element, 'image') and element.image:
+                img_path = os.path.join(output_dir, f"page_{page_num}_{len(images)}.png")
+                element.image.save(img_path)
+                images.append({
+                    "path": img_path,
+                    "page": page_num,
+                    "index": len(images)
+                })
+
+    output = {
+        "success": True,
+        "image_count": len(images),
+        "images": images,
+        "output_dir": output_dir
+    }
+    print(json.dumps(output))
+
+except Exception as e:
+    print(json.dumps({"success": False, "error": str(e)}), file=sys.stderr)
+    sys.exit(1)
+`;
+
+      const result = await this.runPythonCommand(['-c', pythonScript]);
+      const data = JSON.parse(result);
+
+      const duration = Date.now() - startTime;
+      logger.info('Image extraction completed', {
+        source,
+        imageCount: data.image_count,
+        duration: `${duration}ms`
+      });
+
+      return {
+        success: true,
+        images: data.images,
+        imageCount: data.image_count,
+        outputDir: tempDir,
+        metadata: {
+          source,
+          duration,
+          engine: 'docling-image-extraction'
+        }
+      };
+
+    } catch (error) {
+      logger.error('Image extraction failed', {
+        source,
+        error: error.message
+      });
+      throw error;
+    }
+  }
 }
 
 module.exports = new DoclingService();

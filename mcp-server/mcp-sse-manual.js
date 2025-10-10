@@ -77,6 +77,34 @@ const TOOLS = [
     }
   },
   {
+    name: 'transcribe_audio',
+    description: 'Transcribe audio file to text using Docling ASR (supports WAV, MP3)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL or file path of the audio file to transcribe'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'extract_pdf_images',
+    description: 'Extract all images from a PDF document and save them as separate files',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL or file path of the PDF document'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
     name: 'summarize_text',
     description: 'Summarize long text using AI',
     inputSchema: {
@@ -120,6 +148,22 @@ async function executeTool(name, args) {
           vlmModel: args.vlmModel
         });
         return response.data.markdown || JSON.stringify(response.data);
+
+      case 'transcribe_audio':
+        response = await axios.post(`${API_BASE_URL}/api/docling/transcribe`, {
+          url: args.url
+        });
+        return response.data.transcript || JSON.stringify(response.data);
+
+      case 'extract_pdf_images':
+        response = await axios.post(`${API_BASE_URL}/api/docling/extract-images`, {
+          url: args.url
+        });
+        return JSON.stringify({
+          imageCount: response.data.imageCount,
+          images: response.data.images,
+          message: `Extracted ${response.data.imageCount} images from PDF`
+        });
 
       case 'summarize_text':
         response = await axios.post(`${API_BASE_URL}/api/ai/summarize`, {

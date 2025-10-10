@@ -100,6 +100,106 @@ router.post('/convert-api', async (req, res) => {
 });
 
 /**
+ * POST /api/docling/transcribe
+ * Transcribe audio file to text using ASR
+ */
+router.post('/transcribe', async (req, res) => {
+  const startTime = Date.now();
+  const { url } = req.body;
+
+  if (!url) {
+    return res.status(400).json({
+      error: 'Missing required parameter: url',
+      usage: {
+        url: 'Audio file URL or path (WAV, MP3, etc.)'
+      }
+    });
+  }
+
+  logger.info('POST /api/docling/transcribe', {
+    ip: req.ip,
+    url
+  });
+
+  try {
+    const result = await docling.transcribeAudio(url);
+
+    const duration = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      transcript: result.transcript,
+      metadata: {
+        ...result.metadata,
+        totalDuration: duration
+      }
+    });
+
+  } catch (error) {
+    logger.error('Audio transcription error', {
+      url,
+      error: error.message
+    });
+
+    res.status(500).json({
+      error: 'Audio transcription failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/docling/extract-images
+ * Extract images from PDF document
+ */
+router.post('/extract-images', async (req, res) => {
+  const startTime = Date.now();
+  const { url } = req.body;
+
+  if (!url) {
+    return res.status(400).json({
+      error: 'Missing required parameter: url',
+      usage: {
+        url: 'PDF document URL or file path'
+      }
+    });
+  }
+
+  logger.info('POST /api/docling/extract-images', {
+    ip: req.ip,
+    url
+  });
+
+  try {
+    const result = await docling.extractImages(url);
+
+    const duration = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      images: result.images,
+      imageCount: result.imageCount,
+      outputDir: result.outputDir,
+      metadata: {
+        ...result.metadata,
+        totalDuration: duration
+      }
+    });
+
+  } catch (error) {
+    logger.error('Image extraction error', {
+      url,
+      error: error.message
+    });
+
+    res.status(500).json({
+      error: 'Image extraction failed',
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /api/docling/status
  * Check Docling availability
  */
@@ -113,15 +213,23 @@ router.get('/status', async (req, res) => {
     engine: 'IBM Docling',
     version: 'latest',
     capabilities: {
-      formats: ['PDF', 'DOCX', 'PPTX', 'XLSX', 'HTML', 'Images'],
+      formats: ['PDF', 'DOCX', 'PPTX', 'XLSX', 'HTML', 'Images', 'Audio (WAV, MP3)'],
       features: [
         'Advanced layout understanding',
         'Table extraction',
         'Formula recognition',
         'Code block detection',
         'Visual Language Model support',
-        'OCR capabilities'
+        'OCR capabilities',
+        'Audio transcription (ASR)',
+        'Image extraction from PDFs'
       ]
+    },
+    endpoints: {
+      convert: 'POST /api/docling/convert - Convert documents to Markdown',
+      transcribe: 'POST /api/docling/transcribe - Transcribe audio to text',
+      extractImages: 'POST /api/docling/extract-images - Extract images from PDF',
+      status: 'GET /api/docling/status - Check service status'
     }
   });
 });
