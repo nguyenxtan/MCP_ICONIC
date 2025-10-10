@@ -40,3 +40,4 @@ services:
 networks:
   iconic_net:
     external: true
+    name: n8n_iconic_net
