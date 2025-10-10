@@ -37,7 +37,7 @@ const TOOLS = [
   },
   {
     name: 'convert_to_markdown',
-    description: 'Convert PDF, DOCX, PPTX files to markdown',
+    description: 'Convert PDF, DOCX, PPTX files to markdown using MarkItDown',
     inputSchema: {
       type: 'object',
       properties: {
@@ -49,6 +49,28 @@ const TOOLS = [
           type: 'string',
           enum: ['pdf', 'docx', 'pptx', 'xlsx'],
           description: 'File format'
+        }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'docling_convert',
+    description: 'Convert documents to markdown using IBM Docling AI (advanced layout understanding, better accuracy for complex PDFs)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL or file path of the document to convert'
+        },
+        useVLM: {
+          type: 'boolean',
+          description: 'Use Visual Language Model for better accuracy (slower but more accurate)'
+        },
+        vlmModel: {
+          type: 'string',
+          description: 'VLM model name (default: granite_docling)'
         }
       },
       required: ['url']
@@ -89,6 +111,14 @@ async function executeTool(name, args) {
 
       case 'convert_to_markdown':
         response = await axios.post(`${API_BASE_URL}/api/markitdown/convert`, args);
+        return response.data.markdown || JSON.stringify(response.data);
+
+      case 'docling_convert':
+        response = await axios.post(`${API_BASE_URL}/api/docling/convert`, {
+          url: args.url,
+          useVLM: args.useVLM,
+          vlmModel: args.vlmModel
+        });
         return response.data.markdown || JSON.stringify(response.data);
 
       case 'summarize_text':

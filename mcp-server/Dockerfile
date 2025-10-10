@@ -3,11 +3,12 @@ FROM node:20-alpine
 # Install system dependencies (curl for healthcheck)
 RUN apk add --no-cache python3 py3-pip curl
 
-# Install MarkItDown
-RUN pip3 install --break-system-packages markitdown[all]
+# Install MarkItDown and Docling
+RUN pip3 install --break-system-packages markitdown[all] docling
 
-# Verify installation
+# Verify installations
 RUN python3 -m markitdown --help || echo "MarkItDown installed"
+RUN python3 -m docling --version || echo "Docling installed"
 
 # Set working directory
 WORKDIR /app
