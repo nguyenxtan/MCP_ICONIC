@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Install Python and pip
-RUN apk add --no-cache python3 py3-pip
+# Install system dependencies (curl for healthcheck)
+RUN apk add --no-cache python3 py3-pip curl
 
 # Install MarkItDown
 RUN pip3 install --break-system-packages markitdown[all]
@@ -24,8 +24,8 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p uploads outputs
 
-# Expose port
-EXPOSE 3000
+# Expose ports (REST API and MCP SSE)
+EXPOSE 3000 3001
 
 # Start application
 CMD ["npm", "start"]

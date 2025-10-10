@@ -27,7 +27,7 @@ services:
 
     # Health check cho cả REST API và MCP SSE
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health && wget -q --spider http://localhost:3001/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health && curl -f http://localhost:3001/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
