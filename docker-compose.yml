@@ -6,9 +6,10 @@ services:
     container_name: mcp-server
     restart: always
 
-    # Port 3001 - KHÔNG trùng port 3000 của website
+    # Port mapping
     ports:
-      - "3001:3000"
+      - "3001:3000"  # REST API
+      - "3002:3001"  # MCP SSE Protocol
 
     volumes:
       - ./mcp-server/uploads:/app/uploads
@@ -18,14 +19,15 @@ services:
     environment:
       - NODE_ENV=production
       - DEBUG=false
+      - API_BASE_URL=http://localhost:3000
       # AI API Keys (optional)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
 
-    # Auto-restart nếu service lỗi
+    # Health check cho cả REST API và MCP SSE
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health && wget -q --spider http://localhost:3001/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
