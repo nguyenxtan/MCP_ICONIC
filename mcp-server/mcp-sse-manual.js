@@ -160,31 +160,46 @@ async function handleMCPRequest(message) {
 app.get('/sse', (req, res) => {
   const connId = nextId++;
 
-  logger.info(`SSE connection established: ${connId}`);
+  logger.info(`[SSE-${connId}] New connection from ${req.ip}`);
+  logger.info(`[SSE-${connId}] Headers: ${JSON.stringify(req.headers)}`);
 
   // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering
+  res.flushHeaders(); // Flush headers immediately
 
   // Store connection
   connections.set(connId, res);
+
+  logger.info(`[SSE-${connId}] Connection established, sending endpoint info`);
 
   // Send initial endpoint info
   res.write(`event: endpoint\n`);
   res.write(`data: ${JSON.stringify({ endpoint: '/message' })}\n\n`);
 
-  // Keep-alive ping every 30 seconds
+  logger.info(`[SSE-${connId}] Endpoint info sent, connection active`);
+
+  // Keep-alive ping every 15 seconds
   const keepAlive = setInterval(() => {
-    res.write(': ping\n\n');
-  }, 30000);
+    if (connections.has(connId)) {
+      logger.debug(`[SSE-${connId}] Sending keepalive ping`);
+      res.write(`: keepalive ${Date.now()}\n\n`);
+    }
+  }, 15000);
 
   // Handle client disconnect
   req.on('close', () => {
     clearInterval(keepAlive);
     connections.delete(connId);
-    logger.info(`SSE connection closed: ${connId}`);
+    logger.info(`[SSE-${connId}] Connection closed by client`);
+  });
+
+  req.on('error', (err) => {
+    clearInterval(keepAlive);
+    connections.delete(connId);
+    logger.error(`[SSE-${connId}] Connection error: ${err.message}`);
   });
 });
 
@@ -192,11 +207,15 @@ app.get('/sse', (req, res) => {
 app.post('/message', async (req, res) => {
   const request = req.body;
 
-  logger.info(`Received MCP request: ${request.method}`);
+  logger.info(`[MESSAGE] Received from ${req.ip}`);
+  logger.info(`[MESSAGE] Method: ${request.method}`);
+  logger.info(`[MESSAGE] Request ID: ${request.id}`);
+  logger.info(`[MESSAGE] Full request: ${JSON.stringify(request, null, 2)}`);
 
   const response = await handleMCPRequest(request);
 
-  logger.info(`Sending MCP response for: ${request.method}`);
+  logger.info(`[MESSAGE] Sending response for: ${request.method}`);
+  logger.info(`[MESSAGE] Response: ${JSON.stringify(response, null, 2)}`);
 
   // Send response directly via HTTP (not SSE)
   res.status(200).json(response);
