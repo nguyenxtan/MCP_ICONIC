@@ -192,23 +192,14 @@ app.get('/sse', (req, res) => {
 app.post('/message', async (req, res) => {
   const request = req.body;
 
-  logger.info(`Received message: ${request.method}`);
+  logger.info(`Received MCP request: ${request.method}`);
 
   const response = await handleMCPRequest(request);
 
-  // Send response via SSE to all connections
-  const eventData = `data: ${JSON.stringify(response)}\n\n`;
+  logger.info(`Sending MCP response for: ${request.method}`);
 
-  connections.forEach((conn, id) => {
-    try {
-      conn.write(eventData);
-    } catch (err) {
-      logger.error(`Failed to send to connection ${id}:`, err.message);
-      connections.delete(id);
-    }
-  });
-
-  res.status(202).json({ accepted: true });
+  // Send response directly via HTTP (not SSE)
+  res.status(200).json(response);
 });
 
 // Health check
