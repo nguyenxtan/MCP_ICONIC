@@ -58,7 +58,7 @@ class FirecrawlService {
       const response = await axios.get(url, {
         timeout,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; MCPFirecrawl/1.0)'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
       });
 
@@ -201,7 +201,7 @@ class FirecrawlService {
             const response = await axios.get(url, {
               timeout: 30000,
               headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; MCPFirecrawl/1.0)'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
               }
             });
 
