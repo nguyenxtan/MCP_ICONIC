@@ -6,6 +6,7 @@ const path = require('path');
 const logger = require('../common/logger');
 const fileHandler = require('../common/fileHandler');
 const config = require('../../config');
+const puppeteer = require('puppeteer');
 
 class FirecrawlService {
   constructor() {
@@ -54,28 +55,77 @@ class FirecrawlService {
     logger.info(`Starting scrape job: ${jobId}`, { url });
 
     try {
-      // Fetch the webpage with full browser headers
-      const response = await axios.get(url, {
-        timeout,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Cache-Control': 'max-age=0',
-          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1'
+      let htmlContent;
+      let scrapeMethod = 'axios';
+
+      try {
+        // Try axios first (faster)
+        logger.info(`Attempting axios scrape for: ${url}`);
+        const response = await axios.get(url, {
+          timeout,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'max-age=0',
+            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1'
+          }
+        });
+        htmlContent = response.data;
+        logger.info(`Axios scrape successful for: ${url}`);
+      } catch (axiosError) {
+        // If axios fails with 406 or other blocking, fallback to Puppeteer
+        if (axiosError.response && axiosError.response.status === 406) {
+          logger.warn(`Axios blocked (406), falling back to Puppeteer for: ${url}`);
+
+          const browser = await puppeteer.launch({
+            headless: true,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--disable-gpu',
+              '--window-size=1920x1080'
+            ]
+          });
+
+          try {
+            const page = await browser.newPage();
+
+            // Set realistic viewport and user agent
+            await page.setViewport({ width: 1920, height: 1080 });
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+            // Navigate and wait for content
+            await page.goto(url, {
+              waitUntil: 'networkidle2',
+              timeout: timeout
+            });
+
+            // Get rendered HTML
+            htmlContent = await page.content();
+            scrapeMethod = 'puppeteer';
+            logger.info(`Puppeteer scrape successful for: ${url}`);
+          } finally {
+            await browser.close();
+          }
+        } else {
+          // Re-throw if not a blocking error
+          throw axiosError;
         }
-      });
+      }
 
       // Parse HTML
-      const $ = cheerio.load(response.data);
+      const $ = cheerio.load(htmlContent);
 
       // Remove unwanted elements
       removeSelectors.forEach(sel => $(sel).remove());
@@ -105,7 +155,8 @@ class FirecrawlService {
 
       markdown = `# ${title}\n\n` +
                  `**Source:** ${url}\n` +
-                 `**Scraped:** ${new Date().toISOString()}\n\n` +
+                 `**Scraped:** ${new Date().toISOString()}\n` +
+                 `**Method:** ${scrapeMethod}\n\n` +
                  (metaDescription ? `**Description:** ${metaDescription}\n\n---\n\n` : '---\n\n') +
                  markdown;
 
@@ -121,10 +172,11 @@ class FirecrawlService {
         endTime: new Date(),
         title,
         wordCount: markdown.split(/\s+/).length,
+        scrapeMethod,
         markdown: markdown.substring(0, 500) + '...' // Preview
       });
 
-      logger.info(`Scraping completed: ${jobId}`);
+      logger.info(`Scraping completed: ${jobId} using ${scrapeMethod}`);
 
       return {
         jobId,
