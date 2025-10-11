@@ -87,15 +87,24 @@ class FirecrawlService {
           logger.warn(`Axios blocked (406), falling back to Puppeteer for: ${url}`);
 
           const browser = await puppeteer.launch({
-            headless: true,
+            headless: 'new',
             args: [
               '--no-sandbox',
               '--disable-setuid-sandbox',
               '--disable-dev-shm-usage',
               '--disable-accelerated-2d-canvas',
               '--disable-gpu',
-              '--window-size=1920x1080'
-            ]
+              '--disable-software-rasterizer',
+              '--disable-extensions',
+              '--disable-background-networking',
+              '--disable-sync',
+              '--metrics-recording-only',
+              '--mute-audio',
+              '--no-first-run',
+              '--safebrowsing-disable-auto-update',
+              '--window-size=1920,1080'
+            ],
+            timeout: 30000
           });
 
           try {
@@ -105,11 +114,26 @@ class FirecrawlService {
             await page.setViewport({ width: 1920, height: 1080 });
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-            // Navigate and wait for content
-            await page.goto(url, {
-              waitUntil: 'networkidle2',
-              timeout: timeout
+            // Optimize page loading
+            await page.setRequestInterception(true);
+            page.on('request', (request) => {
+              // Block unnecessary resources to speed up
+              const resourceType = request.resourceType();
+              if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+                request.abort();
+              } else {
+                request.continue();
+              }
             });
+
+            // Navigate with shorter timeout and less strict waiting
+            await page.goto(url, {
+              waitUntil: 'domcontentloaded', // Faster than networkidle2
+              timeout: 15000 // 15 seconds max
+            });
+
+            // Wait a bit for dynamic content
+            await page.waitForTimeout(2000);
 
             // Get rendered HTML
             htmlContent = await page.content();
