@@ -212,18 +212,43 @@ async function handleCommand(chatId, message) {
           '🤖 *Model hiện tại:* ' + aiHandler.config.model + '\n\n' +
           '*Đổi model:*\n' +
           '`/model <model_name>`\n\n' +
-          '*Models OpenAI:*\n' +
+          '*📱 Models OpenAI (direct):*\n' +
           '• gpt-4o-mini (rẻ, nhanh)\n' +
           '• gpt-4o (đắt, thông minh)\n' +
+          '• gpt-4-turbo-preview\n' +
+          '• gpt-4\n' +
           '• gpt-3.5-turbo (cũ, rẻ)\n\n' +
-          '*Models OpenRouter:*\n' +
-          '• anthropic/claude-3-haiku (nhanh)\n' +
-          '• anthropic/claude-3.5-sonnet (thông minh)\n' +
-          '• meta-llama/llama-3.1-8b-instruct (free)\n' +
+          '*🌐 OpenRouter - OpenAI models:*\n' +
+          '• openai/gpt-4o-mini\n' +
+          '• openai/gpt-4o\n' +
+          '• openai/gpt-4-turbo\n' +
+          '• openai/gpt-4\n' +
+          '• openai/gpt-3.5-turbo\n\n' +
+          '*🌐 OpenRouter - Google Gemini:*\n' +
+          '• google/gemini-2.0-flash-exp (free, mới nhất)\n' +
+          '• google/gemini-pro-1.5 (free)\n' +
+          '• google/gemini-flash-1.5 (free, nhanh)\n' +
           '• google/gemini-pro (free)\n\n' +
-          '*Models Google:*\n' +
+          '*🌐 OpenRouter - Claude:*\n' +
+          '• anthropic/claude-3.5-sonnet (thông minh nhất)\n' +
+          '• anthropic/claude-3-opus\n' +
+          '• anthropic/claude-3-sonnet\n' +
+          '• anthropic/claude-3-haiku (nhanh)\n\n' +
+          '*🌐 OpenRouter - Meta Llama:*\n' +
+          '• meta-llama/llama-3.3-70b-instruct (free)\n' +
+          '• meta-llama/llama-3.1-405b-instruct\n' +
+          '• meta-llama/llama-3.1-70b-instruct\n' +
+          '• meta-llama/llama-3.1-8b-instruct (free)\n\n' +
+          '*🌐 OpenRouter - Khác:*\n' +
+          '• mistralai/mistral-large\n' +
+          '• mistralai/mixtral-8x7b-instruct (free)\n' +
+          '• qwen/qwen-2-72b-instruct (free)\n' +
+          '• deepseek/deepseek-chat (free)\n\n' +
+          '*🔷 Google AI (direct):*\n' +
+          '• gemini-2.0-flash-exp (mới nhất)\n' +
+          '• gemini-1.5-pro\n' +
           '• gemini-1.5-flash (nhanh)\n' +
-          '• gemini-1.5-pro (thông minh)',
+          '• gemini-pro',
           { parse_mode: 'Markdown' }
         );
       } else {
