@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const TelegramService = require('../modules/telegram');
+const TelegramAIHandler = require('../modules/telegram/ai-handler');
 const markitdownService = require('../modules/markitdown');
 const firecrawlService = require('../modules/firecrawl');
 const doclingService = require('../modules/docling');
@@ -11,6 +12,16 @@ const fs = require('fs');
 
 // Initialize Telegram service
 const telegram = new TelegramService(config.telegram.botToken);
+
+// Initialize AI handler
+const aiHandler = new TelegramAIHandler({
+  enabled: config.telegram.aiEnabled !== false,
+  provider: config.telegram.aiProvider || 'openai',
+  apiKey: config.telegram.aiApiKey || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
+  model: config.telegram.aiModel || 'gpt-4o-mini',
+  temperature: 0.7,
+  maxTokens: 1000
+});
 
 /**
  * Webhook endpoint for Telegram bot
@@ -56,22 +67,43 @@ async function processUpdate(update) {
       return;
     }
 
-    // Handle text message (URL scraping)
+    // Handle text message
     if (message.text) {
       const urlRegex = /(https?:\/\/[^\s]+)/g;
       const urls = message.text.match(urlRegex);
 
       if (urls && urls.length > 0) {
+        // Handle URL scraping
         await handleUrlScraping(chatId, urls[0], message.message_id);
       } else {
-        await telegram.sendMessage(chatId,
-          '📝 *Gửi cho tôi:*\n' +
-          '• URL để scrape\n' +
-          '• PDF/DOCX/PPTX để convert sang Markdown\n' +
-          '• Audio để transcribe\n' +
-          '• /help để xem hướng dẫn',
-          { reply_to: message.message_id }
-        );
+        // Use AI to respond if enabled
+        if (aiHandler.isEnabled()) {
+          try {
+            await telegram.sendChatAction(chatId, 'typing');
+            const aiResponse = await aiHandler.generateResponse(chatId, message.text);
+            await telegram.sendMessage(chatId, aiResponse, { reply_to: message.message_id });
+          } catch (error) {
+            logger.error('AI response error:', error);
+            await telegram.sendMessage(chatId,
+              '📝 *Gửi cho tôi:*\n' +
+              '• URL để scrape\n' +
+              '• PDF/DOCX/PPTX để convert sang Markdown\n' +
+              '• Audio để transcribe\n' +
+              '• /help để xem hướng dẫn',
+              { reply_to: message.message_id }
+            );
+          }
+        } else {
+          // Fallback if AI not enabled
+          await telegram.sendMessage(chatId,
+            '📝 *Gửi cho tôi:*\n' +
+            '• URL để scrape\n' +
+            '• PDF/DOCX/PPTX để convert sang Markdown\n' +
+            '• Audio để transcribe\n' +
+            '• /help để xem hướng dẫn',
+            { reply_to: message.message_id }
+          );
+        }
       }
       return;
     }
@@ -182,23 +214,45 @@ async function handleUrlScraping(chatId, url, replyTo) {
 
     // Send markdown result
     if (result.markdown) {
+      // Use AI to summarize if enabled
+      let summary = null;
+      if (aiHandler.isEnabled() && result.wordCount > 200) {
+        try {
+          await telegram.sendMessage(chatId, '🤖 Đang tóm tắt nội dung bằng AI...');
+          summary = await aiHandler.summarizeContent(result.markdown, 300);
+        } catch (error) {
+          logger.error('AI summarization error:', error);
+        }
+      }
+
+      // Send AI summary first if available
+      if (summary) {
+        await telegram.sendMessage(chatId,
+          `📝 *Tóm tắt AI:*\n\n${summary}\n\n---\n_Xem full content bên dưới_`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+
       // Split into chunks if too long (Telegram limit: 4096 chars)
       const chunks = splitText(result.markdown, 4000);
 
-      for (let i = 0; i < chunks.length; i++) {
+      // Send first chunk always, rest only if no summary or short
+      const chunksToSend = summary ? Math.min(chunks.length, 1) : chunks.length;
+
+      for (let i = 0; i < chunksToSend; i++) {
         await telegram.sendMessage(chatId, chunks[i], {
           parse_mode: 'Markdown',
           disable_preview: true
         });
 
         // Small delay between messages
-        if (i < chunks.length - 1) {
+        if (i < chunksToSend - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
       // Send as file if too long
-      if (chunks.length > 3) {
+      if (chunks.length > 1) {
         const filePath = result.outputPath;
         await telegram.sendDocument(chatId, filePath,
           `📄 Full content (${result.wordCount} words)`
@@ -208,7 +262,8 @@ async function handleUrlScraping(chatId, url, replyTo) {
       await telegram.sendMessage(chatId,
         `✅ *Scrape hoàn tất*\n` +
         `📊 Words: ${result.wordCount}\n` +
-        `⚡ Method: ${result.scrapeMethod || 'axios'}`
+        `⚡ Method: ${result.scrapeMethod || 'axios'}` +
+        (summary ? '\n🤖 AI Summary: ✅' : '')
       );
     }
   } catch (error) {
