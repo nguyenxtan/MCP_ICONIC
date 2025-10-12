@@ -213,19 +213,24 @@ async function handleCommand(chatId, message) {
           '*Đổi model:*\n' +
           '`/model <model_name>`\n\n' +
           '*📱 Models OpenAI (direct):*\n' +
+          '• o1 (reasoning, mới nhất)\n' +
+          '• o1-mini (reasoning, nhanh)\n' +
           '• gpt-4o-mini (rẻ, nhanh)\n' +
           '• gpt-4o (đắt, thông minh)\n' +
           '• gpt-4-turbo-preview\n' +
           '• gpt-4\n' +
           '• gpt-3.5-turbo (cũ, rẻ)\n\n' +
           '*🌐 OpenRouter - OpenAI models:*\n' +
+          '• openai/o1 (reasoning)\n' +
+          '• openai/o1-mini (reasoning, nhanh)\n' +
           '• openai/gpt-4o-mini\n' +
           '• openai/gpt-4o\n' +
           '• openai/gpt-4-turbo\n' +
           '• openai/gpt-4\n' +
           '• openai/gpt-3.5-turbo\n\n' +
           '*🌐 OpenRouter - Google Gemini:*\n' +
-          '• google/gemini-2.0-flash-exp (free, mới nhất)\n' +
+          '• google/gemini-2.5-pro-exp (free, mới nhất)\n' +
+          '• google/gemini-2.0-flash-exp (free)\n' +
           '• google/gemini-pro-1.5 (free)\n' +
           '• google/gemini-flash-1.5 (free, nhanh)\n' +
           '• google/gemini-pro (free)\n\n' +
@@ -245,7 +250,8 @@ async function handleCommand(chatId, message) {
           '• qwen/qwen-2-72b-instruct (free)\n' +
           '• deepseek/deepseek-chat (free)\n\n' +
           '*🔷 Google AI (direct):*\n' +
-          '• gemini-2.0-flash-exp (mới nhất)\n' +
+          '• gemini-2.5-pro-exp (mới nhất)\n' +
+          '• gemini-2.0-flash-exp\n' +
           '• gemini-1.5-pro\n' +
           '• gemini-1.5-flash (nhanh)\n' +
           '• gemini-pro',
