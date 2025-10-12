@@ -12,7 +12,9 @@
       "Bash(API_BASE_URL=http://localhost:3000 node mcp-server.js)",
       "Bash(curl:*)",
       "Bash(pkill:*)",
-      "Bash(API_BASE_URL=http://localhost:3000 node mcp-simple.js)"
+      "Bash(API_BASE_URL=http://localhost:3000 node mcp-simple.js)",
+      "Bash(docker logs:*)",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []

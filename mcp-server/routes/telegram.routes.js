@@ -1,0 +1,411 @@
+const express = require('express');
+const router = express.Router();
+const TelegramService = require('../modules/telegram');
+const markitdownService = require('../modules/markitdown');
+const firecrawlService = require('../modules/firecrawl');
+const doclingService = require('../modules/docling');
+const logger = require('../modules/common/logger');
+const config = require('../config');
+const path = require('path');
+const fs = require('fs');
+
+// Initialize Telegram service
+const telegram = new TelegramService(config.telegram.botToken);
+
+/**
+ * Webhook endpoint for Telegram bot
+ */
+router.post('/webhook', async (req, res) => {
+  try {
+    const update = req.body;
+    logger.info('Telegram webhook received', { update });
+
+    // Respond quickly to Telegram
+    res.status(200).json({ ok: true });
+
+    // Process update asynchronously
+    processUpdate(update).catch(err => {
+      logger.error('Error processing Telegram update:', err);
+    });
+  } catch (error) {
+    logger.error('Telegram webhook error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Process Telegram update
+ */
+async function processUpdate(update) {
+  const message = update.message || update.edited_message;
+  if (!message) return;
+
+  const chatId = message.chat.id;
+  const userId = message.from.id;
+  const userName = message.from.first_name || message.from.username || 'User';
+
+  logger.info(`Processing message from ${userName} (${userId}) in chat ${chatId}`);
+
+  try {
+    // Send typing indicator
+    await telegram.sendChatAction(chatId, 'typing');
+
+    // Handle commands
+    if (message.text && message.text.startsWith('/')) {
+      await handleCommand(chatId, message);
+      return;
+    }
+
+    // Handle text message (URL scraping)
+    if (message.text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = message.text.match(urlRegex);
+
+      if (urls && urls.length > 0) {
+        await handleUrlScraping(chatId, urls[0], message.message_id);
+      } else {
+        await telegram.sendMessage(chatId,
+          '📝 *Gửi cho tôi:*\n' +
+          '• URL để scrape\n' +
+          '• PDF/DOCX/PPTX để convert sang Markdown\n' +
+          '• Audio để transcribe\n' +
+          '• /help để xem hướng dẫn',
+          { reply_to: message.message_id }
+        );
+      }
+      return;
+    }
+
+    // Handle document
+    if (message.document) {
+      await handleDocument(chatId, message);
+      return;
+    }
+
+    // Handle photo
+    if (message.photo) {
+      await telegram.sendMessage(chatId,
+        '📷 Tôi đã nhận ảnh. Tuy nhiên hiện tại tôi chưa hỗ trợ xử lý ảnh trực tiếp.\n' +
+        'Bạn có thể gửi file PDF chứa ảnh để tôi extract.',
+        { reply_to: message.message_id }
+      );
+      return;
+    }
+
+    // Handle voice/audio
+    if (message.voice || message.audio) {
+      await handleAudio(chatId, message);
+      return;
+    }
+
+  } catch (error) {
+    logger.error('Error processing message:', error);
+    await telegram.sendMessage(chatId,
+      `❌ Lỗi xử lý: ${error.message}`,
+      { reply_to: message.message_id }
+    );
+  }
+}
+
+/**
+ * Handle commands
+ */
+async function handleCommand(chatId, message) {
+  const command = message.text.split(' ')[0].toLowerCase();
+
+  switch (command) {
+    case '/start':
+      await telegram.sendMessage(chatId,
+        '👋 Xin chào! Tôi là MCP Bot.\n\n' +
+        '🔧 *Tôi có thể:*\n' +
+        '• Scrape nội dung website → Markdown\n' +
+        '• Convert PDF/DOCX/PPTX → Markdown\n' +
+        '• Convert document bằng AI (Docling)\n' +
+        '• Transcribe audio → text\n' +
+        '• Extract ảnh từ PDF\n\n' +
+        'Gửi URL hoặc file cho tôi để bắt đầu!\n' +
+        'Dùng /help để xem chi tiết.'
+      );
+      break;
+
+    case '/help':
+      await telegram.sendMessage(chatId,
+        '📖 *Hướng dẫn sử dụng:*\n\n' +
+        '*1. Scrape website:*\n' +
+        'Gửi URL trực tiếp, ví dụ:\n' +
+        '`https://vnexpress.net/article-123`\n\n' +
+        '*2. Convert document:*\n' +
+        'Gửi file PDF, DOCX, PPTX\n' +
+        'Tôi sẽ convert sang Markdown\n\n' +
+        '*3. Transcribe audio:*\n' +
+        'Gửi file audio (MP3, WAV)\n' +
+        'Tôi sẽ chuyển thành text\n\n' +
+        '*4. Commands:*\n' +
+        '/start - Bắt đầu\n' +
+        '/help - Hướng dẫn\n' +
+        '/status - Trạng thái bot'
+      );
+      break;
+
+    case '/status':
+      const botInfo = await telegram.getMe();
+      await telegram.sendMessage(chatId,
+        `🤖 *Bot Status*\n\n` +
+        `Name: ${botInfo.first_name}\n` +
+        `Username: @${botInfo.username}\n` +
+        `Status: ✅ Online\n` +
+        `Version: 2.0.0`
+      );
+      break;
+
+    default:
+      await telegram.sendMessage(chatId,
+        '❓ Không hiểu lệnh. Dùng /help để xem hướng dẫn.'
+      );
+  }
+}
+
+/**
+ * Handle URL scraping
+ */
+async function handleUrlScraping(chatId, url, replyTo) {
+  try {
+    await telegram.sendMessage(chatId,
+      `🔍 Đang scrape: ${url}\nVui lòng chờ...`,
+      { reply_to: replyTo }
+    );
+
+    await telegram.sendChatAction(chatId, 'typing');
+
+    // Scrape URL
+    const result = await firecrawlService.scrapeUrl(url);
+
+    // Send markdown result
+    if (result.markdown) {
+      // Split into chunks if too long (Telegram limit: 4096 chars)
+      const chunks = splitText(result.markdown, 4000);
+
+      for (let i = 0; i < chunks.length; i++) {
+        await telegram.sendMessage(chatId, chunks[i], {
+          parse_mode: 'Markdown',
+          disable_preview: true
+        });
+
+        // Small delay between messages
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      // Send as file if too long
+      if (chunks.length > 3) {
+        const filePath = result.outputPath;
+        await telegram.sendDocument(chatId, filePath,
+          `📄 Full content (${result.wordCount} words)`
+        );
+      }
+
+      await telegram.sendMessage(chatId,
+        `✅ *Scrape hoàn tất*\n` +
+        `📊 Words: ${result.wordCount}\n` +
+        `⚡ Method: ${result.scrapeMethod || 'axios'}`
+      );
+    }
+  } catch (error) {
+    logger.error('URL scraping error:', error);
+    await telegram.sendMessage(chatId,
+      `❌ Lỗi scrape URL:\n${error.message}`
+    );
+  }
+}
+
+/**
+ * Handle document upload
+ */
+async function handleDocument(chatId, message) {
+  const document = message.document;
+  const fileName = document.file_name;
+  const fileExt = path.extname(fileName).toLowerCase();
+
+  try {
+    await telegram.sendMessage(chatId,
+      `📥 Đang download: ${fileName}\nVui lòng chờ...`,
+      { reply_to: message.message_id }
+    );
+
+    await telegram.sendChatAction(chatId, 'upload_document');
+
+    // Download file
+    const uploadPath = path.join(config.uploadsDir, `${Date.now()}_${fileName}`);
+    await telegram.downloadFile(document.file_id, uploadPath);
+
+    // Process based on file type
+    if (['.pdf', '.docx', '.pptx', '.xlsx'].includes(fileExt)) {
+      await telegram.sendMessage(chatId, '🔄 Đang convert sang Markdown...');
+
+      // Use MarkItDown for fast conversion
+      const result = await markitdownService.convertToMarkdown(uploadPath);
+
+      if (result.markdown) {
+        // Send markdown result
+        const chunks = splitText(result.markdown, 4000);
+
+        for (let i = 0; i < chunks.length; i++) {
+          await telegram.sendMessage(chatId, chunks[i], {
+            parse_mode: 'Markdown'
+          });
+
+          if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+
+        // Send as file
+        const outputPath = result.outputPath;
+        await telegram.sendDocument(chatId, outputPath,
+          `✅ ${fileName} → Markdown\n📊 ${result.wordCount} words`
+        );
+      }
+
+      // Cleanup
+      fs.unlinkSync(uploadPath);
+
+    } else {
+      await telegram.sendMessage(chatId,
+        `⚠️ File type không được hỗ trợ: ${fileExt}\n` +
+        `Hỗ trợ: PDF, DOCX, PPTX, XLSX`
+      );
+      fs.unlinkSync(uploadPath);
+    }
+
+  } catch (error) {
+    logger.error('Document processing error:', error);
+    await telegram.sendMessage(chatId,
+      `❌ Lỗi xử lý file:\n${error.message}`
+    );
+  }
+}
+
+/**
+ * Handle audio files
+ */
+async function handleAudio(chatId, message) {
+  const audio = message.voice || message.audio;
+
+  try {
+    await telegram.sendMessage(chatId,
+      `🎤 Đang download audio...\nVui lòng chờ...`,
+      { reply_to: message.message_id }
+    );
+
+    // Download audio
+    const audioPath = path.join(config.uploadsDir, `${Date.now()}_audio.ogg`);
+    await telegram.downloadFile(audio.file_id, audioPath);
+
+    await telegram.sendMessage(chatId, '🔄 Đang transcribe...');
+
+    // Transcribe using Docling
+    const result = await doclingService.transcribeAudio(audioPath);
+
+    if (result.text) {
+      await telegram.sendMessage(chatId,
+        `📝 *Transcription:*\n\n${result.text}`
+      );
+    }
+
+    // Cleanup
+    fs.unlinkSync(audioPath);
+
+  } catch (error) {
+    logger.error('Audio transcription error:', error);
+    await telegram.sendMessage(chatId,
+      `❌ Lỗi transcribe audio:\n${error.message}`
+    );
+  }
+}
+
+/**
+ * Split long text into chunks
+ */
+function splitText(text, maxLength = 4000) {
+  const chunks = [];
+  let currentChunk = '';
+
+  const lines = text.split('\n');
+
+  for (const line of lines) {
+    if (currentChunk.length + line.length + 1 > maxLength) {
+      chunks.push(currentChunk);
+      currentChunk = line;
+    } else {
+      currentChunk += (currentChunk ? '\n' : '') + line;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
+/**
+ * Setup webhook
+ */
+router.post('/setup-webhook', async (req, res) => {
+  try {
+    const { webhook_url } = req.body;
+
+    if (!webhook_url) {
+      return res.status(400).json({ error: 'webhook_url is required' });
+    }
+
+    const result = await telegram.setWebhook(webhook_url);
+
+    res.json({
+      success: true,
+      message: 'Webhook configured',
+      result
+    });
+  } catch (error) {
+    logger.error('Setup webhook error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Delete webhook
+ */
+router.post('/delete-webhook', async (req, res) => {
+  try {
+    const result = await telegram.deleteWebhook();
+
+    res.json({
+      success: true,
+      message: 'Webhook deleted',
+      result
+    });
+  } catch (error) {
+    logger.error('Delete webhook error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get bot info
+ */
+router.get('/bot-info', async (req, res) => {
+  try {
+    const botInfo = await telegram.getMe();
+
+    res.json({
+      success: true,
+      bot: botInfo
+    });
+  } catch (error) {
+    logger.error('Get bot info error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;

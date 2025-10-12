@@ -12,6 +12,7 @@ const aiRoutes = require('./routes/ai.routes');
 const conversionRoutes = require('./routes/conversion.routes');
 const healthRoutes = require('./routes/health.routes');
 const doclingRoutes = require('./routes/docling.routes');
+const telegramRoutes = require('./routes/telegram.routes');
 
 // Initialize Express app
 const app = express();
@@ -141,6 +142,7 @@ app.use('/api/batch', conversionRoutes);
 app.use('/api/qrcode', conversionRoutes);
 app.use('/api/cloud', conversionRoutes);
 app.use('/api/docling', doclingRoutes);
+app.use('/api/telegram', telegramRoutes);
 
 // 404 handler
 app.use((req, res) => {

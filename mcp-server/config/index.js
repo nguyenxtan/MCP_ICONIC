@@ -131,5 +131,12 @@ module.exports = {
     defaultWidth: 300,
     defaultErrorCorrectionLevel: 'M', // L, M, Q, H
     maxDataLength: 4296
+  },
+
+  // Telegram Bot config
+  telegram: {
+    enabled: process.env.TELEGRAM_ENABLED === 'true' || true,
+    botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    webhookUrl: process.env.TELEGRAM_WEBHOOK_URL || ''
   }
 };
