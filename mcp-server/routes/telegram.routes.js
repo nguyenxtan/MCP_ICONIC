@@ -221,6 +221,8 @@ async function handleCommand(chatId, message) {
           '• gpt-4\n' +
           '• gpt-3.5-turbo (cũ, rẻ)\n\n' +
           '*🌐 OpenRouter - OpenAI models:*\n' +
+          '• openai/gpt-4.1 (mới nhất)\n' +
+          '• openai/gpt-4.1-mini (nhanh)\n' +
           '• openai/o1 (reasoning)\n' +
           '• openai/o1-mini (reasoning, nhanh)\n' +
           '• openai/gpt-4o-mini\n' +
