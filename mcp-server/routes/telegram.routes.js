@@ -175,19 +175,67 @@ async function handleCommand(chatId, message) {
         '*4. Commands:*\n' +
         '/start - Bắt đầu\n' +
         '/help - Hướng dẫn\n' +
-        '/status - Trạng thái bot'
+        '/status - Trạng thái bot\n' +
+        '/model - Xem/đổi AI model\n' +
+        '/clear - Xóa lịch sử chat'
       );
       break;
 
     case '/status':
       const botInfo = await telegram.getMe();
+      const aiStatus = aiHandler.isEnabled() ? '✅ Enabled' : '❌ Disabled';
+      const aiProvider = aiHandler.config.provider || 'N/A';
+      const aiModel = aiHandler.config.model || 'N/A';
+
       await telegram.sendMessage(chatId,
         `🤖 *Bot Status*\n\n` +
         `Name: ${botInfo.first_name}\n` +
         `Username: @${botInfo.username}\n` +
         `Status: ✅ Online\n` +
-        `Version: 2.0.0`
+        `Version: 2.0.0\n\n` +
+        `🧠 *AI Status*\n` +
+        `AI: ${aiStatus}\n` +
+        `Provider: ${aiProvider}\n` +
+        `Model: ${aiModel}`
       );
+      break;
+
+    case '/model':
+      if (!aiHandler.isEnabled()) {
+        await telegram.sendMessage(chatId, '❌ AI không được kích hoạt. Cần config API key.');
+        break;
+      }
+
+      const args = message.text.split(' ');
+      if (args.length < 2) {
+        await telegram.sendMessage(chatId,
+          '🤖 *Model hiện tại:* ' + aiHandler.config.model + '\n\n' +
+          '*Đổi model:*\n' +
+          '`/model <model_name>`\n\n' +
+          '*Models OpenAI:*\n' +
+          '• gpt-4o-mini (rẻ, nhanh)\n' +
+          '• gpt-4o (đắt, thông minh)\n' +
+          '• gpt-3.5-turbo (cũ, rẻ)\n\n' +
+          '*Models OpenRouter:*\n' +
+          '• anthropic/claude-3-haiku (nhanh)\n' +
+          '• anthropic/claude-3.5-sonnet (thông minh)\n' +
+          '• meta-llama/llama-3.1-8b-instruct (free)\n' +
+          '• google/gemini-pro (free)\n\n' +
+          '*Models Google:*\n' +
+          '• gemini-1.5-flash (nhanh)\n' +
+          '• gemini-1.5-pro (thông minh)',
+          { parse_mode: 'Markdown' }
+        );
+      } else {
+        const newModel = args.slice(1).join(' ');
+        aiHandler.config.model = newModel;
+        await telegram.sendMessage(chatId, `✅ Đã đổi model sang: *${newModel}*`);
+      }
+      break;
+
+    case '/clear':
+      aiHandler.clearHistory(chatId);
+      await telegram.sendMessage(chatId, '🗑️ Đã xóa lịch sử chat!');
       break;
 
     default:
