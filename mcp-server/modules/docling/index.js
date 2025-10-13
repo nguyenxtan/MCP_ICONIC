@@ -326,6 +326,13 @@ except Exception as e:
       throw error;
     }
   }
+
+  /**
+   * Convert file (alias for convertToMarkdown for compatibility)
+   */
+  async convertFile(inputPath, options = {}) {
+    return await this.convertToMarkdown(inputPath, options);
+  }
 }
 
 module.exports = new DoclingService();

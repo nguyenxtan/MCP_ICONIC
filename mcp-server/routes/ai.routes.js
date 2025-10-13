@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const ocrService = require('../modules/ai/ocr.service');
+// OCR removed - use Docling instead
 const summarizationService = require('../modules/ai/summarization.service');
 const translationService = require('../modules/ai/translation.service');
 const analysisService = require('../modules/ai/analysis.service');
