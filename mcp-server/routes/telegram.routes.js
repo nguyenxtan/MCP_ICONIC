@@ -114,13 +114,9 @@ async function processUpdate(update) {
       return;
     }
 
-    // Handle photo
+    // Handle photo - OCR with Docling
     if (message.photo) {
-      await telegram.sendMessage(chatId,
-        '📷 Tôi đã nhận ảnh. Tuy nhiên hiện tại tôi chưa hỗ trợ xử lý ảnh trực tiếp.\n' +
-        'Bạn có thể gửi file PDF chứa ảnh để tôi extract.',
-        { reply_to: message.message_id }
-      );
+      await handlePhoto(chatId, message);
       return;
     }
 
@@ -543,5 +539,66 @@ router.get('/bot-info', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * Handle photo - OCR with Docling
+ */
+async function handlePhoto(chatId, message) {
+  try {
+    await telegram.sendMessage(chatId,
+      '📷 Đang tải ảnh xuống...',
+      { reply_to: message.message_id }
+    );
+
+    // Get highest resolution photo
+    const photos = message.photo;
+    const bestPhoto = photos[photos.length - 1];
+    const fileId = bestPhoto.file_id;
+
+    // Download photo
+    const uploadPath = path.join(config.uploadsDir, `${Date.now()}_photo.jpg`);
+    await telegram.downloadFile(fileId, uploadPath);
+
+    await telegram.sendMessage(chatId, '🔍 Đang OCR ảnh bằng Docling...');
+    await telegram.sendChatAction(chatId, 'typing');
+
+    // Use Docling for OCR
+    if (!doclingService.isAvailable) {
+      throw new Error('Docling service not available');
+    }
+
+    const result = await doclingService.convertFile(uploadPath);
+
+    if (result.markdown) {
+      // Send OCR result
+      const chunks = splitText(result.markdown, 4000);
+      for (let i = 0; i < chunks.length; i++) {
+        await telegram.sendMessage(chatId,
+          `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${chunks[i]}`
+        );
+      }
+
+      await telegram.sendMessage(chatId,
+        `✅ *Hoàn tất!*\n` +
+        `📏 Độ dài: ${result.markdown.length} ký tự`
+      );
+    } else {
+      await telegram.sendMessage(chatId, '❌ Không thể OCR ảnh này');
+    }
+
+    // Cleanup
+    try {
+      fs.unlinkSync(uploadPath);
+    } catch (err) {
+      logger.warn('Failed to delete uploaded photo:', err);
+    }
+
+  } catch (error) {
+    logger.error('Photo OCR error:', error);
+    await telegram.sendMessage(chatId,
+      `❌ Lỗi OCR ảnh:\n${error.message}`
+    );
+  }
+}
 
 module.exports = router;
