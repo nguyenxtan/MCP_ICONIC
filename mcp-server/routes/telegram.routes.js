@@ -453,9 +453,9 @@ async function handleAudio(chatId, message) {
     // Transcribe using Docling
     const result = await doclingService.transcribeAudio(audioPath);
 
-    if (result.text) {
+    if (result.transcript) {
       await telegram.sendMessage(chatId,
-        `📝 *Transcription:*\n\n${result.text}`
+        `📝 *Transcription:*\n\n${result.transcript}`
       );
     }
 
