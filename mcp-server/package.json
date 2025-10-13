@@ -8,9 +8,10 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "start": "node server.js & node mcp-sse-manual.js",
+    "start": "node server.js & node mcp-sse-manual.js & node telegram-server.js",
     "start:api": "node server.js",
     "start:mcp": "node mcp-sse-manual.js",
+    "start:telegram": "node telegram-server.js",
     "start:mcp-simple": "node mcp-simple.js",
     "test": "jest",
     "test:watch": "jest --watch",
