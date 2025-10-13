@@ -380,7 +380,7 @@ async function handleDocument(chatId, message) {
       await telegram.sendMessage(chatId, '🔄 Đang convert sang Markdown...');
 
       // Use MarkItDown for fast conversion
-      const result = await markitdownService.convertToMarkdown(uploadPath);
+      const result = await markitdownService.convertFile(uploadPath);
 
       if (result.markdown) {
         // Send markdown result
