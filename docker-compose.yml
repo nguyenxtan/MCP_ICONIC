@@ -15,7 +15,7 @@ services:
     volumes:
       - ./mcp-server/uploads:/app/uploads
       - ./mcp-server/outputs:/app/outputs
-      - ./mcp-server/.env:/app/mcp-server/.env
+      - ./mcp-server/.env:/app/.env
 
     environment:
       - NODE_ENV=production
