@@ -206,8 +206,7 @@ except Exception as e:
     try {
       // Docling supports audio files directly
       const result = await this.convertToMarkdown(source, {
-        ...options,
-        format: 'audio'
+        ...options
       });
 
       const duration = Date.now() - startTime;

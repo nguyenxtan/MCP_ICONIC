@@ -188,8 +188,8 @@ async function handleCommand(chatId, message) {
       const aiStatus = aiHandler.isEnabled() ? '✅ Enabled' : '❌ Disabled';
       const aiProvider = aiHandler.config.provider || 'N/A';
       const aiModel = aiHandler.config.model || 'N/A';
-      const markitdownStatus = markitdownService.isAvailable ? '✅' : '❌';
-      const firecrawlStatus = firecrawlService.isAvailable ? '✅' : '❌';
+      const markitdownStatus = markitdownService ? '✅' : '❌';
+      const firecrawlStatus = firecrawlService ? '✅' : '❌';
       const doclingStatus = doclingService.isAvailable ? '✅' : '❌';
 
       await telegram.sendMessage(chatId,
@@ -407,8 +407,9 @@ async function handleDocument(chatId, message) {
 
         // Send as file
         const outputPath = result.outputPath;
+        const safeFileName = fileName.replace(/_/g, '\\_');
         await telegram.sendDocument(chatId, outputPath,
-          `✅ ${fileName} → Markdown\n📊 ${result.wordCount} words`
+          `✅ ${safeFileName} → Markdown\n📊 ${result.wordCount} words`
         );
       }
 
@@ -580,7 +581,7 @@ async function handlePhoto(chatId, message) {
       throw new Error('Docling service not available');
     }
 
-    const result = await doclingService.convertFile(uploadPath);
+    const result = await doclingService.convertToMarkdown(uploadPath);
 
     if (result.markdown) {
       // Send OCR result
