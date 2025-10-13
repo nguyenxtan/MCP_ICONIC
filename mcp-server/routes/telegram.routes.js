@@ -146,12 +146,12 @@ async function handleCommand(chatId, message) {
       await telegram.sendMessage(chatId,
         '👋 Xin chào! Tôi là MCP Bot.\n\n' +
         '🔧 *Tôi có thể:*\n' +
-        '• Scrape nội dung website → Markdown\n' +
-        '• Convert PDF/DOCX/PPTX → Markdown\n' +
-        '• Convert document bằng AI (Docling)\n' +
-        '• Transcribe audio → text\n' +
-        '• Extract ảnh từ PDF\n\n' +
-        'Gửi URL hoặc file cho tôi để bắt đầu!\n' +
+        '• 🌐 Scrape website (Firecrawl)\n' +
+        '• 📄 Convert PDF/DOCX/PPTX (MarkItDown)\n' +
+        '• 📷 OCR ảnh → text (Docling AI)\n' +
+        '• 🎤 Transcribe audio (Docling AI)\n' +
+        '• 💬 Chat AI (OpenRouter/OpenAI/Gemini)\n\n' +
+        'Gửi URL, file, hoặc ảnh cho tôi!\n' +
         'Dùng /help để xem chi tiết.'
       );
       break;
@@ -159,19 +159,25 @@ async function handleCommand(chatId, message) {
     case '/help':
       await telegram.sendMessage(chatId,
         '📖 *Hướng dẫn sử dụng:*\n\n' +
-        '*1. Scrape website:*\n' +
-        'Gửi URL trực tiếp, ví dụ:\n' +
-        '`https://vnexpress.net/article-123`\n\n' +
-        '*2. Convert document:*\n' +
-        'Gửi file PDF, DOCX, PPTX\n' +
-        'Tôi sẽ convert sang Markdown\n\n' +
-        '*3. Transcribe audio:*\n' +
-        'Gửi file audio (MP3, WAV)\n' +
-        'Tôi sẽ chuyển thành text\n\n' +
-        '*4. Commands:*\n' +
+        '*1. 🌐 Scrape website:*\n' +
+        'Gửi URL → Firecrawl scrape → Markdown\n' +
+        'VD: `https://vnexpress.net/article-123`\n\n' +
+        '*2. 📄 Convert document:*\n' +
+        'PDF/DOCX/PPTX → MarkItDown → Markdown\n' +
+        'Gửi file trực tiếp vào chat\n\n' +
+        '*3. 📷 OCR ảnh:*\n' +
+        'JPG/PNG → Docling AI → text OCR\n' +
+        'Gửi ảnh có chữ để OCR\n\n' +
+        '*4. 🎤 Transcribe audio:*\n' +
+        'MP3/WAV/OGG → Docling AI → text\n' +
+        'Gửi file audio hoặc voice message\n\n' +
+        '*5. 💬 Chat AI:*\n' +
+        'Gửi text → AI trả lời\n' +
+        'Dùng /model để đổi AI model\n\n' +
+        '*Commands:*\n' +
         '/start - Bắt đầu\n' +
-        '/help - Hướng dẫn\n' +
-        '/status - Trạng thái bot\n' +
+        '/help - Hướng dẫn chi tiết\n' +
+        '/status - Xem trạng thái & services\n' +
         '/model - Xem/đổi AI model\n' +
         '/clear - Xóa lịch sử chat'
       );
@@ -182,6 +188,9 @@ async function handleCommand(chatId, message) {
       const aiStatus = aiHandler.isEnabled() ? '✅ Enabled' : '❌ Disabled';
       const aiProvider = aiHandler.config.provider || 'N/A';
       const aiModel = aiHandler.config.model || 'N/A';
+      const markitdownStatus = markitdownService.isAvailable ? '✅' : '❌';
+      const firecrawlStatus = firecrawlService.isAvailable ? '✅' : '❌';
+      const doclingStatus = doclingService.isAvailable ? '✅' : '❌';
 
       await telegram.sendMessage(chatId,
         `🤖 *Bot Status*\n\n` +
@@ -189,8 +198,12 @@ async function handleCommand(chatId, message) {
         `Username: @${botInfo.username}\n` +
         `Status: ✅ Online\n` +
         `Version: 2.0.0\n\n` +
-        `🧠 *AI Status*\n` +
-        `AI: ${aiStatus}\n` +
+        `🔧 *Services:*\n` +
+        `${firecrawlStatus} Firecrawl (Web scraping)\n` +
+        `${markitdownStatus} MarkItDown (PDF/DOCX convert)\n` +
+        `${doclingStatus} Docling AI (OCR & Audio)\n\n` +
+        `🧠 *AI Chat:*\n` +
+        `Status: ${aiStatus}\n` +
         `Provider: ${aiProvider}\n` +
         `Model: ${aiModel}`
       );
