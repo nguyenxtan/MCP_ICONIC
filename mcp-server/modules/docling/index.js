@@ -17,9 +17,21 @@ class DoclingService {
 
   async checkAvailability() {
     try {
-      const result = await this.runPythonCommand(['docling', '--version']);
+      // Check if docling module can be imported
+      const { spawn } = require('child_process');
+      const result = await new Promise((resolve, reject) => {
+        const proc = spawn('python3', ['-c', 'from docling.document_converter import DocumentConverter; print("OK")']);
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', (data) => { stdout += data.toString(); });
+        proc.stderr.on('data', (data) => { stderr += data.toString(); });
+        proc.on('close', (code) => {
+          if (code === 0) resolve(stdout);
+          else reject(new Error(stderr));
+        });
+      });
       this.isAvailable = true;
-      logger.info('Docling is available', { version: result.trim() });
+      logger.info('Docling is available and ready');
     } catch (error) {
       this.isAvailable = false;
       logger.warn('Docling is not available. Install with: pip install docling');
