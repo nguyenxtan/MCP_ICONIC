@@ -108,15 +108,15 @@ async function processUpdate(update) {
       return;
     }
 
-    // Handle document
-    if (message.document) {
-      await handleDocument(chatId, message);
-      return;
-    }
-
     // Handle photo - OCR with Docling
     if (message.photo) {
       await handlePhoto(chatId, message);
+      return;
+    }
+
+    // Handle document
+    if (message.document) {
+      await handleDocument(chatId, message);
       return;
     }
 

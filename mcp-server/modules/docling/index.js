@@ -43,7 +43,9 @@ class DoclingService {
    */
   runPythonCommand(args) {
     return new Promise((resolve, reject) => {
-      const process = spawn('python3', ['-m', ...args]);
+      const command = args[0];
+      const commandArgs = args.slice(1);
+      const process = spawn(command, commandArgs);
       let stdout = '';
       let stderr = '';
 
@@ -76,68 +78,19 @@ class DoclingService {
     }
 
     const startTime = Date.now();
-    logger.info('Starting Docling conversion', { source, options });
+    logger.info('Starting Docling conversion via Python API', { source, options });
 
     try {
-      // Create temp directory for output
-      const tempDir = path.join(__dirname, '../../outputs', `docling_${Date.now()}`);
-      await fs.mkdir(tempDir, { recursive: true });
-
-      // Build command args
-      const args = ['docling'];
-
-      // Add pipeline option (default or vlm)
-      if (options.useVLM) {
-        args.push('--pipeline', 'vlm');
-        args.push('--vlm-model', options.vlmModel || 'granite_docling');
-      }
-
-      // Add OCR options
-      if (options.ocr !== false) {
-        args.push('--ocr');
-      }
-
-      // Output format
-      args.push('--format', 'md');
-      args.push('--output', tempDir);
-
-      // Source document
-      args.push(source);
-
-      // Run conversion
-      const output = await this.runPythonCommand(args);
-
-      // Read converted markdown file
-      const files = await fs.readdir(tempDir);
-      const mdFile = files.find(f => f.endsWith('.md'));
-
-      if (!mdFile) {
-        throw new Error('Conversion completed but no markdown file was generated');
-      }
-
-      const markdown = await fs.readFile(path.join(tempDir, mdFile), 'utf-8');
-
-      // Cleanup temp directory
-      await fs.rm(tempDir, { recursive: true, force: true });
+      const result = await this.convertWithPythonAPI(source, options);
 
       const duration = Date.now() - startTime;
       logger.info('Docling conversion completed', {
         source,
         duration: `${duration}ms`,
-        outputSize: markdown.length
+        outputSize: result.markdown.length
       });
 
-      return {
-        success: true,
-        markdown,
-        metadata: {
-          source,
-          duration,
-          size: markdown.length,
-          engine: 'docling',
-          pipeline: options.useVLM ? 'vlm' : 'default'
-        }
-      };
+      return result;
 
     } catch (error) {
       logger.error('Docling conversion failed', {
@@ -162,7 +115,7 @@ import json
 from docling.document_converter import DocumentConverter
 
 try:
-    source = "${source}"
+    source = """${source.replace(/\\/g, '\\\\')}"""
     converter = DocumentConverter()
     result = converter.convert(source)
     markdown = result.document.export_to_markdown()
@@ -182,7 +135,7 @@ except Exception as e:
 `;
 
     try {
-      const result = await this.runPythonCommand(['-c', pythonScript]);
+      const result = await this.runPythonCommand(['python3', '-c', pythonScript]);
       return JSON.parse(result);
     } catch (error) {
       logger.error('Docling Python API conversion failed', { error: error.message });
@@ -205,8 +158,8 @@ except Exception as e:
 
     try {
       // Docling supports audio files directly
-      const result = await this.convertToMarkdown(source, {
-        ...options
+      const result = await this.convertWithPythonAPI(source, {
+        ...options,
       });
 
       const duration = Date.now() - startTime;
@@ -217,7 +170,7 @@ except Exception as e:
 
       return {
         success: true,
-        transcript: result.markdown,
+        transcript: result.markdown, // The result from audio is the transcript
         metadata: {
           source,
           duration,

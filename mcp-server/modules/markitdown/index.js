@@ -86,7 +86,7 @@ class MarkItDownService {
    */
   _executeMarkItDown(inputPath, outputPath, options) {
     return new Promise((resolve, reject) => {
-      // MarkItDown command: markitdown input.pdf -o output.md
+      // MarkItDown command: markitdown "input path" -o "output path"
       const args = ['-m', 'markitdown', inputPath, '-o', outputPath];
       
       logger.debug('Executing MarkItDown', { 
@@ -94,7 +94,7 @@ class MarkItDownService {
         args 
       });
       
-      const process = spawn(config.markitdown.pythonCommand, args);
+      const process = spawn(config.markitdown.pythonCommand, args, { shell: false });
       
       let stdout = '';
       let stderr = '';
