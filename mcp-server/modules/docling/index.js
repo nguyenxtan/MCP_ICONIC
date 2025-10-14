@@ -109,15 +109,22 @@ class DoclingService {
       throw new Error('Docling is not installed');
     }
 
+    const lang = options.language || 'en';
+
     const pythonScript = `
 import sys
 import json
 from docling.document_converter import DocumentConverter
+from docling.pipelines.ocr_pipeline import OcrOptions
 
 try:
     source = """${source.replace(/\\/g, '\\\\')}"""
     converter = DocumentConverter()
-    result = converter.convert(source)
+    
+    # Set OCR options with language
+    ocr_options = OcrOptions(languages=["${lang}"])
+    
+    result = converter.convert(source, ocr_options=ocr_options)
     markdown = result.document.export_to_markdown()
 
     output = {
@@ -125,7 +132,8 @@ try:
         "markdown": markdown,
         "metadata": {
             "source": source,
-            "engine": "docling-python-api"
+            "engine": "docling-python-api",
+            "language": "${lang}"
         }
     }
     print(json.dumps(output))
@@ -174,7 +182,8 @@ except Exception as e:
         metadata: {
           source,
           duration,
-          engine: 'docling-asr'
+          engine: 'docling-asr',
+          language: options.language || 'en'
         }
       };
 

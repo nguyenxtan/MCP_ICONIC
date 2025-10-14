@@ -396,8 +396,8 @@ async function handleDocument(chatId, message) {
         const chunks = splitText(result.markdown, 4000);
 
         for (let i = 0; i < chunks.length; i++) {
-          await telegram.sendMessage(chatId, chunks[i], {
-            parse_mode: 'Markdown'
+          await telegram.sendMessage(chatId, escapeMarkdownV2(chunks[i]), {
+            parse_mode: 'MarkdownV2'
           });
 
           if (i < chunks.length - 1) {
@@ -425,13 +425,14 @@ async function handleDocument(chatId, message) {
         throw new Error('Docling service not available');
       }
 
-      const result = await doclingService.convertToMarkdown(uploadPath);
+      const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi' });
 
       if (result.markdown) {
         const chunks = splitText(result.markdown, 4000);
         for (let i = 0; i < chunks.length; i++) {
           await telegram.sendMessage(chatId,
-            `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${chunks[i]}`
+            `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${escapeMarkdownV2(chunks[i])}`,
+            { parse_mode: 'MarkdownV2' }
           );
         }
         await telegram.sendMessage(chatId, `✅ *Hoàn tất!*\n📏 Độ dài: ${result.markdown.length} ký tự`);
@@ -477,11 +478,12 @@ async function handleAudio(chatId, message) {
     await telegram.sendMessage(chatId, '🔄 Đang transcribe...');
 
     // Transcribe using Docling
-    const result = await doclingService.transcribeAudio(audioPath);
+    const result = await doclingService.transcribeAudio(audioPath, { language: 'vi' });
 
     if (result.transcript) {
       await telegram.sendMessage(chatId,
-        `📝 *Transcription:*\n\n${result.transcript}`
+        `📝 *Transcription:*\n\n${escapeMarkdownV2(result.transcript)}`,
+        { parse_mode: 'MarkdownV2' }
       );
     }
 
@@ -519,6 +521,20 @@ function splitText(text, maxLength = 4000) {
   }
 
   return chunks;
+}
+
+/**
+ * Escapes text for Telegram's MarkdownV2 format.
+ * @param {string} text The text to escape.
+ * @returns {string} The escaped text.
+ */
+function escapeMarkdownV2(text) {
+  if (!text) return '';
+  // List of characters to escape
+  const escapeChars = '_*[]()~`>#+-=|{}.!';
+  // Create a regex to match any of these characters
+  const regex = new RegExp(`[${escapeChars.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}]`, 'g');
+  return text.replace(regex, '\\$&');
 }
 
 /**
@@ -607,14 +623,15 @@ async function handlePhoto(chatId, message) {
       throw new Error('Docling service not available');
     }
 
-    const result = await doclingService.convertToMarkdown(uploadPath);
+    const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi' });
 
     if (result.markdown) {
       // Send OCR result
       const chunks = splitText(result.markdown, 4000);
       for (let i = 0; i < chunks.length; i++) {
         await telegram.sendMessage(chatId,
-          `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${chunks[i]}`
+          `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${escapeMarkdownV2(chunks[i])}`,
+          { parse_mode: 'MarkdownV2' }
         );
       }
 
