@@ -416,10 +416,36 @@ async function handleDocument(chatId, message) {
       // Cleanup
       fs.unlinkSync(uploadPath);
 
+    } else if (['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff'].includes(fileExt)) {
+      // Handle image files sent as documents
+      await telegram.sendMessage(chatId, '🔍 Đang OCR ảnh bằng Docling...');
+      await telegram.sendChatAction(chatId, 'typing');
+
+      if (!doclingService.isAvailable) {
+        throw new Error('Docling service not available');
+      }
+
+      const result = await doclingService.convertToMarkdown(uploadPath);
+
+      if (result.markdown) {
+        const chunks = splitText(result.markdown, 4000);
+        for (let i = 0; i < chunks.length; i++) {
+          await telegram.sendMessage(chatId,
+            `📄 *OCR Result (${i + 1}/${chunks.length}):*\n\n${chunks[i]}`
+          );
+        }
+        await telegram.sendMessage(chatId, `✅ *Hoàn tất!*\n📏 Độ dài: ${result.markdown.length} ký tự`);
+      } else {
+        await telegram.sendMessage(chatId, '❌ Không thể OCR ảnh này');
+      }
+
+      // Cleanup
+      fs.unlinkSync(uploadPath);
+
     } else {
       await telegram.sendMessage(chatId,
         `⚠️ File type không được hỗ trợ: ${fileExt}\n` +
-        `Hỗ trợ: PDF, DOCX, PPTX, XLSX`
+        `Hỗ trợ: PDF, DOCX, PPTX, XLSX, PNG, JPG`
       );
       fs.unlinkSync(uploadPath);
     }
