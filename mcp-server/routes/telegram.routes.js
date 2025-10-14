@@ -9,6 +9,7 @@ const logger = require('../modules/common/logger');
 const config = require('../config');
 const path = require('path');
 const fs = require('fs');
+const qrcodeService = require('../modules/utils/qrcode.service');
 
 // Initialize Telegram service
 const telegram = new TelegramService(config.telegram.botToken);
@@ -179,7 +180,8 @@ async function handleCommand(chatId, message) {
         '/help - Hướng dẫn chi tiết\n' +
         '/status - Xem trạng thái & services\n' +
         '/model - Xem/đổi AI model\n' +
-        '/clear - Xóa lịch sử chat'
+        '/clear - Xóa lịch sử chat\n' +
+        '/qr <text> - Tạo QR code'
       );
       break;
 
@@ -278,6 +280,25 @@ async function handleCommand(chatId, message) {
     case '/clear':
       aiHandler.clearHistory(chatId);
       await telegram.sendMessage(chatId, '🗑️ Đã xóa lịch sử chat!');
+      break;
+
+    case '/qr':
+      const qrArgs = message.text.split(' ');
+      if (qrArgs.length < 2) {
+        await telegram.sendMessage(chatId, 'Vui lòng cung cấp nội dung để tạo QR code.\nVí dụ: `/qr https://example.com`');
+        break;
+      }
+      const qrData = qrArgs.slice(1).join(' ');
+      try {
+        await telegram.sendMessage(chatId, `Đang tạo QR code cho: \`${qrData}\``, { parse_mode: 'MarkdownV2' });
+        const outputPath = path.join(config.uploadsDir, `qr_${Date.now()}.png`);
+        await qrcodeService.generateImage(qrData, outputPath);
+        await telegram.sendPhoto(chatId, outputPath, `QR code cho: ${qrData}`);
+        fs.unlinkSync(outputPath); // Clean up the generated file
+      } catch (error) {
+        logger.error('QR code generation error:', error);
+        await telegram.sendMessage(chatId, `❌ Lỗi tạo QR code: ${error.message}`);
+      }
       break;
 
     default:
@@ -657,5 +678,34 @@ async function handlePhoto(chatId, message) {
     );
   }
 }
+
+/**
+ * Generate QR code
+ */
+router.post('/generate-qrcode', async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+
+    // Generate QR code
+    const qrCodePath = await qrcodeService.generateQRCode(text);
+
+    // Send QR code image
+    await telegram.sendPhoto(req.chat.id, qrCodePath, {
+      caption: '📱 Here is your QR code:'
+    });
+
+    res.json({
+      success: true,
+      message: 'QR code generated and sent'
+    });
+  } catch (error) {
+    logger.error('QR code generation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;
