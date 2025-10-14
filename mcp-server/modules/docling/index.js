@@ -110,21 +110,29 @@ class DoclingService {
     }
 
     const lang = options.language || 'en';
+    const useVLM = options.useVLM || false;
 
     const pythonScript = `
 import sys
 import json
 from docling.document_converter import DocumentConverter
 from docling.pipelines.ocr_pipeline import OcrOptions
+from docling.pipelines.vlm_ocr_pipeline import VlmOcrPipeline
 
 try:
     source = """${source.replace(/\\/g, '\\\\')}"""
-    converter = DocumentConverter()
-    
-    # Set OCR options with language
-    ocr_options = OcrOptions(languages=["${lang}"])
-    
-    result = converter.convert(source, ocr_options=ocr_options)
+    use_vlm = ${useVLM}
+
+    if use_vlm:
+        # Use VLM pipeline for table-heavy documents
+        converter = DocumentConverter(pipelines=[VlmOcrPipeline()])
+        result = converter.convert(source)
+    else:
+        # Use standard OCR pipeline with language options
+        converter = DocumentConverter()
+        ocr_options = OcrOptions(languages=["${lang}"])
+        result = converter.convert(source, ocr_options=ocr_options)
+        
     markdown = result.document.export_to_markdown()
 
     output = {
@@ -132,7 +140,7 @@ try:
         "markdown": markdown,
         "metadata": {
             "source": source,
-            "engine": "docling-python-api",
+            "engine": "docling-vlm-python-api" if use_vlm else "docling-python-api",
             "language": "${lang}"
         }
     }

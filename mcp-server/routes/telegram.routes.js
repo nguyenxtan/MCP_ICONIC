@@ -446,7 +446,7 @@ async function handleDocument(chatId, message) {
         throw new Error('Docling service not available');
       }
 
-      const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi' });
+      const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi', useVLM: true });
 
       if (result.markdown) {
         const chunks = splitText(result.markdown, 4000);
@@ -644,7 +644,7 @@ async function handlePhoto(chatId, message) {
       throw new Error('Docling service not available');
     }
 
-    const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi' });
+    const result = await doclingService.convertToMarkdown(uploadPath, { language: 'vi', useVLM: true });
 
     if (result.markdown) {
       // Send OCR result
